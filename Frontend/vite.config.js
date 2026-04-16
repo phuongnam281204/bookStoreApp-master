@@ -8,6 +8,8 @@ export default defineConfig({
     proxy: {
       "/book": "http://localhost:4001",
       "/user": "http://localhost:4001",
+      "/order": "http://localhost:4001",
+      "/health": "http://localhost:4001",
     },
   },
 });

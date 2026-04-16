@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -8,15 +8,12 @@ import axios from "axios";
 
 import Cards from "./Cards";
 function Freebook() {
-  const API_BASE = import.meta.env.VITE_API_URL || "";
   const [book, setBook] = useState([]);
   useEffect(() => {
     const getBook = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/book`);
-
-        const data = res.data.filter((data) => data.category === "Free");
-        console.log(data);
+        const res = await axios.get("/book");
+        const data = (res.data || []).filter((b) => b.category === "Free");
         setBook(data);
       } catch (error) {
         console.log(error);
@@ -74,7 +71,7 @@ function Freebook() {
         <div>
           <Slider {...settings}>
             {book.map((item) => (
-              <Cards item={item} key={item.id} />
+              <Cards item={item} key={item._id || item.id} />
             ))}
           </Slider>
         </div>

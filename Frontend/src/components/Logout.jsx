@@ -1,25 +1,19 @@
-import React from "react";
 import { useAuth } from "../context/AuthProvider";
 import toast from "react-hot-toast";
+import axios from "axios";
 
 function Logout() {
-  const [authUser, setAuthUser] = useAuth();
-  const handleLogout = () => {
+  const [, setAuthUser] = useAuth();
+  const handleLogout = async () => {
     try {
-      setAuthUser({
-        ...authUser,
-        user: null,
-      });
-      localStorage.removeItem("Users");
-      toast.success("Logout successfully");
-
-      setTimeout(() => {
-        window.location.reload();
-      }, 3000);
-    } catch (error) {
-      toast.error("Error: " + error);
-      setTimeout(() => {}, 2000);
+      await axios.post("/user/logout", {}, { withCredentials: true });
+    } catch {
+      // ignore
     }
+
+    setAuthUser(undefined);
+    localStorage.removeItem("Users");
+    toast.success("Logout successfully");
   };
   return (
     <div>

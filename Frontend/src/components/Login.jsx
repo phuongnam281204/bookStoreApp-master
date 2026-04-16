@@ -1,10 +1,11 @@
-import React from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthProvider";
+
 function Login() {
-  const API_BASE = import.meta.env.VITE_API_URL || "";
+  const [, setAuthUser] = useAuth();
   const {
     register,
     handleSubmit,
@@ -16,26 +17,23 @@ function Login() {
       email: data.email,
       password: data.password,
     };
-    await axios
-      .post(`${API_BASE}/user/login`, userInfo)
-      .then((res) => {
-        console.log(res.data);
-        if (res.data) {
-          toast.success("Loggedin Successfully");
-          document.getElementById("my_modal_3").close();
-          setTimeout(() => {
-            window.location.reload();
-            localStorage.setItem("Users", JSON.stringify(res.data.user));
-          }, 1000);
-        }
-      })
-      .catch((err) => {
-        const message =
-          err?.response?.data?.message || err?.message || "Login failed";
-        console.log(err);
-        toast.error("Error: " + message);
-        setTimeout(() => {}, 2000);
+
+    try {
+      const res = await axios.post("/user/login", userInfo, {
+        withCredentials: true,
       });
+      const user = res?.data?.user;
+      if (user) {
+        localStorage.setItem("Users", JSON.stringify(user));
+        setAuthUser(user);
+      }
+      toast.success("Logged in successfully");
+      document.getElementById("my_modal_3").close();
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || err?.message || "Login failed";
+      toast.error("Error: " + message);
+    }
   };
   return (
     <div>

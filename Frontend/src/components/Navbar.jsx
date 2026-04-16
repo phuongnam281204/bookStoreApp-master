@@ -1,22 +1,33 @@
-import React, { useEffect } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Login from "./Login";
 import Logout from "./Logout";
 import { useAuth } from "../context/AuthProvider";
+import { useCart } from "../context/CartProvider";
 
 function Navbar() {
-  const [authUser, setAuthUser] = useAuth();
+  const [authUser] = useAuth();
+  const { totals } = useCart();
+  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+
+  const submitSearch = () => {
+    const term = search.trim();
+    if (!term) return;
+    navigate(`/course?search=${encodeURIComponent(term)}`);
+  };
+
   const [theme, setTheme] = useState(
-    localStorage.getItem("theme") ? localStorage.getItem("theme") : "light"
+    localStorage.getItem("theme") ? localStorage.getItem("theme") : "light",
   );
-  const element = document.documentElement;
   useEffect(() => {
+    const root = document.documentElement;
     if (theme === "dark") {
-      element.classList.add("dark");
+      root.classList.add("dark");
       localStorage.setItem("theme", "dark");
       document.body.classList.add("dark");
     } else {
-      element.classList.remove("dark");
+      root.classList.remove("dark");
       localStorage.setItem("theme", "light");
       document.body.classList.remove("dark");
     }
@@ -45,10 +56,13 @@ function Navbar() {
         <a href="/course">Course</a>
       </li>
       <li>
-        <a>Contact</a>
+        <a href="/cart">Cart ({totals.count})</a>
       </li>
       <li>
-        <a>About</a>
+        <a href="/contact">Contact</a>
+      </li>
+      <li>
+        <a href="/about">About</a>
       </li>
     </>
   );
@@ -103,6 +117,14 @@ function Navbar() {
                   type="text"
                   className="grow outline-none rounded-md px-1 dark:bg-slate-900 dark:text-white"
                   placeholder="Search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      submitSearch();
+                    }
+                  }}
                 />
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

@@ -1,11 +1,12 @@
-import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Login from "./Login";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthProvider";
+
 function Signup() {
-  const API_BASE = import.meta.env.VITE_API_URL || "";
+  const [, setAuthUser] = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const from = location.state?.from?.pathname || "/";
@@ -21,22 +22,23 @@ function Signup() {
       email: data.email,
       password: data.password,
     };
-    await axios
-      .post(`${API_BASE}/user/signup`, userInfo)
-      .then((res) => {
-        console.log(res.data);
-        if (res.data) {
-          toast.success("Signup Successfully");
-          navigate(from, { replace: true });
-        }
-        localStorage.setItem("Users", JSON.stringify(res.data.user));
-      })
-      .catch((err) => {
-        const message =
-          err?.response?.data?.message || err?.message || "Signup failed";
-        console.log(err);
-        toast.error("Error: " + message);
+
+    try {
+      const res = await axios.post("/user/signup", userInfo, {
+        withCredentials: true,
       });
+      const user = res?.data?.user;
+      if (user) {
+        localStorage.setItem("Users", JSON.stringify(user));
+        setAuthUser(user);
+      }
+      toast.success("Signup successfully");
+      navigate(from, { replace: true });
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || err?.message || "Signup failed";
+      toast.error("Error: " + message);
+    }
   };
   return (
     <>
@@ -91,7 +93,7 @@ function Signup() {
                 <span>Password</span>
                 <br />
                 <input
-                  type="text"
+                  type="password"
                   placeholder="Enter your password"
                   className="w-80 px-3 py-1 border rounded-md outline-none"
                   {...register("password", { required: true })}
