@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import axios from "axios";
 import toast from "react-hot-toast";
 function Login() {
+  const API_BASE = import.meta.env.VITE_API_URL || "";
   const {
     register,
     handleSubmit,
@@ -16,7 +17,7 @@ function Login() {
       password: data.password,
     };
     await axios
-      .post("http://localhost:4001/user/login", userInfo)
+      .post(`${API_BASE}/user/login`, userInfo)
       .then((res) => {
         console.log(res.data);
         if (res.data) {
@@ -29,11 +30,11 @@ function Login() {
         }
       })
       .catch((err) => {
-        if (err.response) {
-          console.log(err);
-          toast.error("Error: " + err.response.data.message);
-          setTimeout(() => {}, 2000);
-        }
+        const message =
+          err?.response?.data?.message || err?.message || "Login failed";
+        console.log(err);
+        toast.error("Error: " + message);
+        setTimeout(() => {}, 2000);
       });
   };
   return (

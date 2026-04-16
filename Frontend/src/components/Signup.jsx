@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import axios from "axios";
 import toast from "react-hot-toast";
 function Signup() {
+  const API_BASE = import.meta.env.VITE_API_URL || "";
   const location = useLocation();
   const navigate = useNavigate();
   const from = location.state?.from?.pathname || "/";
@@ -21,7 +22,7 @@ function Signup() {
       password: data.password,
     };
     await axios
-      .post("http://localhost:4001/user/signup", userInfo)
+      .post(`${API_BASE}/user/signup`, userInfo)
       .then((res) => {
         console.log(res.data);
         if (res.data) {
@@ -31,10 +32,10 @@ function Signup() {
         localStorage.setItem("Users", JSON.stringify(res.data.user));
       })
       .catch((err) => {
-        if (err.response) {
-          console.log(err);
-          toast.error("Error: " + err.response.data.message);
-        }
+        const message =
+          err?.response?.data?.message || err?.message || "Signup failed";
+        console.log(err);
+        toast.error("Error: " + message);
       });
   };
   return (
