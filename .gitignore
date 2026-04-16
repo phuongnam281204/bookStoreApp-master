@@ -1,0 +1,35 @@
+# Dependencies
+**/node_modules/
+
+# Build outputs
+**/dist/
+**/dist-ssr/
+**/build/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Environment files (keep secrets out of git)
+.env
+**/.env
+.env.*
+**/.env.*
+!.env.example
+!.env.*.example
+
+# Local tooling
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Accidental folder created by running npm in the wrong place
+Backend/Frontend/
