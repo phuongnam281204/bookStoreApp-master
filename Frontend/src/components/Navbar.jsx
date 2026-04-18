@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Login from "./Login";
 import Logout from "./Logout";
 import { useAuth } from "../context/AuthProvider";
 import { useCart } from "../context/CartProvider";
+import { useI18n } from "../context/I18nProvider";
 
 function Navbar() {
   const [authUser] = useAuth();
   const { totals } = useCart();
   const navigate = useNavigate();
+  const { lang, toggleLang, t } = useI18n();
   const [search, setSearch] = useState("");
 
   const submitSearch = () => {
@@ -50,19 +52,21 @@ function Navbar() {
   const navItems = (
     <>
       <li>
-        <a href="/">Home</a>
+        <Link to="/">{t("nav.home")}</Link>
       </li>
       <li>
-        <a href="/course">Course</a>
+        <Link to="/course">{t("nav.course")}</Link>
       </li>
       <li>
-        <a href="/cart">Cart ({totals.count})</a>
+        <Link to="/cart">
+          {t("nav.cart")} ({totals.count})
+        </Link>
       </li>
       <li>
-        <a href="/contact">Contact</a>
+        <Link to="/contact">{t("nav.contact")}</Link>
       </li>
       <li>
-        <a href="/about">About</a>
+        <Link to="/about">{t("nav.about")}</Link>
       </li>
     </>
   );
@@ -105,18 +109,20 @@ function Navbar() {
                 {navItems}
               </ul>
             </div>
-            <a className=" text-2xl font-bold cursor-pointer">bookStore</a>
+            <Link to="/" className=" text-2xl font-bold cursor-pointer">
+              bookStore
+            </Link>
           </div>
           <div className="navbar-end space-x-3">
             <div className="navbar-center hidden lg:flex">
               <ul className="menu menu-horizontal px-1">{navItems}</ul>
             </div>
             <div className="hidden md:block">
-              <label className=" px-3 py-2 border rounded-md flex items-center gap-2">
+              <label className="px-3 py-2 border rounded-md flex items-center gap-2">
                 <input
                   type="text"
                   className="grow outline-none rounded-md px-1 dark:bg-slate-900 dark:text-white"
-                  placeholder="Search"
+                  placeholder={t("nav.search")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   onKeyDown={(e) => {
@@ -140,6 +146,26 @@ function Navbar() {
                 </svg>
               </label>
             </div>
+
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={toggleLang}
+              aria-label={t("lang.toggle")}
+              title={t("lang.toggle")}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="w-5 h-5"
+              >
+                <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm6.93 9h-3.17a15.4 15.4 0 0 0-1.12-5.02A8.03 8.03 0 0 1 18.93 11ZM12 4c.83 1.2 1.5 2.9 1.9 5H10.1c.4-2.1 1.07-3.8 1.9-5ZM4.07 13h3.17c.2 1.8.67 3.47 1.34 4.9A8.04 8.04 0 0 1 4.07 13ZM7.24 11H4.07a8.03 8.03 0 0 1 4.51-5.02A15.4 15.4 0 0 0 7.24 11Zm2.85 0h3.82c.06.66.09 1.33.09 2s-.03 1.34-.09 2h-3.82a16.7 16.7 0 0 1 0-4Zm-2.03 2c0-.67.03-1.34.09-2H7.33c-.06.66-.09 1.33-.09 2s.03 1.34.09 2h.82c-.06-.66-.09-1.33-.09-2Zm3.94 6c-.83-1.2-1.5-2.9-1.9-5h3.8c-.4 2.1-1.07 3.8-1.9 5Zm2.42-1.1c.67-1.43 1.14-3.1 1.34-4.9h3.17a8.04 8.04 0 0 1-4.51 4.9ZM16.67 11h.82c.06.66.09 1.33.09 2s-.03 1.34-.09 2h-.82c.06-.66.09-1.33.09-2s-.03-1.34-.09-2ZM15.85 11c-.2-1.8-.67-3.47-1.34-4.9A8.03 8.03 0 0 1 19.93 11h-4.08ZM8.15 13c.2 1.8.67 3.47 1.34 4.9A8.03 8.03 0 0 1 4.07 13h4.08Z" />
+              </svg>
+              <span className="ml-1 text-xs font-semibold">
+                {lang.toUpperCase()}
+              </span>
+            </button>
             <label className="swap swap-rotate">
               {/* this hidden checkbox controls the state */}
               <input
@@ -179,7 +205,7 @@ function Navbar() {
                     document.getElementById("my_modal_3").showModal()
                   }
                 >
-                  Login
+                  {t("nav.login")}
                 </a>
                 <Login />
               </div>

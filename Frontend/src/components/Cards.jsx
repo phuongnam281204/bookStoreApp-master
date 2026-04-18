@@ -1,7 +1,9 @@
 import { useCart } from "../context/CartProvider";
+import { useI18n } from "../context/I18nProvider";
 
 function Cards({ item }) {
   const { addItem } = useCart();
+  const { t } = useI18n();
 
   return (
     <>
@@ -23,7 +25,7 @@ function Cards({ item }) {
                 className="cursor-pointer px-2 py-1 rounded-full border-[2px] hover:bg-pink-500 hover:text-white duration-200"
                 onClick={() => addItem(item)}
               >
-                Buy Now
+                {t("cards.buyNow")}
               </button>
             </div>
           </div>
