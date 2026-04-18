@@ -32,11 +32,15 @@ export const getBookById = async (req, res) => {
 
 export const createBook = async (req, res) => {
   try {
-    const { name, price, category, image, title } = req.body;
+    const { name, price, quantity, category, image, title } = req.body;
 
     const book = await Book.create({
       name: String(name || "").trim(),
       price: Number(price),
+      quantity:
+        quantity === undefined || quantity === null || quantity === ""
+          ? 0
+          : Number(quantity),
       category: String(category || "").trim(),
       image: String(image || "").trim(),
       title: String(title || "").trim(),
@@ -57,13 +61,24 @@ export const updateBook = async (req, res) => {
     }
 
     const updates = {};
-    for (const key of ["name", "price", "category", "image", "title"]) {
-      if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+    for (const key of [
+      "name",
+      "price",
+      "quantity",
+      "category",
+      "image",
+      "title",
+    ]) {
+      if (!Object.prototype.hasOwnProperty.call(req.body, key)) continue;
+
+      if (key === "price" || key === "quantity") {
+        const raw = req.body[key];
         updates[key] =
-          key === "price"
-            ? Number(req.body[key])
-            : String(req.body[key] || "").trim();
+          raw === "" || raw === null || raw === undefined ? 0 : Number(raw);
+        continue;
       }
+
+      updates[key] = String(req.body[key] || "").trim();
     }
 
     const book = await Book.findByIdAndUpdate(id, updates, { new: true });
