@@ -23,6 +23,7 @@ export default function AuthProvider({ children }) {
         if (status === 401) {
           setAuthUser(undefined);
           localStorage.removeItem("Users");
+          window.dispatchEvent(new Event("cart:clear"));
         }
       }
     };

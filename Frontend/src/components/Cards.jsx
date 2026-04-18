@@ -1,9 +1,18 @@
 import { useCart } from "../context/CartProvider";
+import { useAuth } from "../context/AuthProvider";
 import { useI18n } from "../context/I18nProvider";
+import toast from "react-hot-toast";
 
 function Cards({ item }) {
   const { addItem } = useCart();
+  const [authUser] = useAuth();
   const { t } = useI18n();
+
+  const requireLogin = () => {
+    toast.error(t("cart.loginRequired"));
+    const modal = document.getElementById("my_modal_3");
+    if (modal && typeof modal.showModal === "function") modal.showModal();
+  };
 
   return (
     <>
@@ -23,7 +32,10 @@ function Cards({ item }) {
               <button
                 type="button"
                 className="cursor-pointer px-2 py-1 rounded-full border-[2px] hover:bg-pink-500 hover:text-white duration-200"
-                onClick={() => addItem(item)}
+                onClick={() => {
+                  if (!authUser) return requireLogin();
+                  addItem(item);
+                }}
               >
                 {t("cards.buyNow")}
               </button>

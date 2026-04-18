@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 const CartContext = createContext();
@@ -16,6 +16,17 @@ export default function CartProvider({ children }) {
   })();
 
   const [items, setItems] = useState(initial);
+
+  const clearCart = () => {
+    setItems([]);
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
+  useEffect(() => {
+    const handler = () => clearCart();
+    window.addEventListener("cart:clear", handler);
+    return () => window.removeEventListener("cart:clear", handler);
+  }, []);
 
   const persist = (next) => {
     setItems(next);
@@ -63,7 +74,7 @@ export default function CartProvider({ children }) {
     persist(next);
   };
 
-  const clear = () => persist([]);
+  const clear = () => clearCart();
 
   const totals = useMemo(() => {
     const count = items.reduce((sum, x) => sum + x.qty, 0);
