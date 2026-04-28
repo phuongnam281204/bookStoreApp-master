@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -20,6 +21,7 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 const PORT = process.env.PORT || 4000;
 const URI = process.env.MongoDBURI;

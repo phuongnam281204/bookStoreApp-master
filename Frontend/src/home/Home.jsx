@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Navbar from "../components/Navbar";
 import Banner from "../components/Banner";
-import Freebook from "../components/Freebook";
 import Footer from "../components/Footer";
 import axios from "axios";
 import Cards from "../components/Cards";
@@ -44,7 +43,6 @@ function Home() {
     <>
       <Navbar />
       <Banner />
-      <Freebook />
 
       <div className="max-w-screen-2xl container mx-auto md:px-20 px-4 mt-10">
         <div className="flex items-end justify-between gap-4">
@@ -54,7 +52,7 @@ function Home() {
           </Link>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           {featured.map((item) => (
             <Cards key={item._id || item.id} item={item} />
           ))}

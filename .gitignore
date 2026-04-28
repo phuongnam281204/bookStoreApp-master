@@ -33,3 +33,6 @@ pnpm-debug.log*
 
 # Accidental folder created by running npm in the wrong place
 Backend/Frontend/
+
+# Uploaded files
+Backend/uploads/

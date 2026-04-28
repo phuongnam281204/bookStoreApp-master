@@ -4,12 +4,27 @@ import Footer from "../components/Footer";
 import axios from "axios";
 import toast from "react-hot-toast";
 
-const emptyForm = { name: "", price: "", category: "", image: "", title: "" };
+const emptyForm = {
+  name: "",
+  price: "",
+  category: "",
+  image: "",
+  title: "",
+  supplier: "",
+  author: "",
+  translator: "",
+  publisher: "",
+  publishYear: "",
+  weightGr: "",
+  packageSize: "",
+  pages: "",
+};
 
 function BooksAdmin() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
+  const [imageFile, setImageFile] = useState(null);
   const [editingId, setEditingId] = useState(null);
 
   const load = async () => {
@@ -33,13 +48,20 @@ function BooksAdmin() {
   const submit = async (e) => {
     e.preventDefault();
     try {
-      const payload = {
-        name: form.name,
-        price: Number(form.price),
-        category: form.category,
-        image: form.image,
-        title: form.title,
-      };
+      const payload = new FormData();
+      payload.append("name", form.name);
+      payload.append("price", form.price);
+      payload.append("category", form.category);
+      payload.append("title", form.title);
+      payload.append("supplier", form.supplier);
+      payload.append("author", form.author);
+      payload.append("translator", form.translator);
+      payload.append("publisher", form.publisher);
+      payload.append("publishYear", form.publishYear);
+      payload.append("weightGr", form.weightGr);
+      payload.append("packageSize", form.packageSize);
+      payload.append("pages", form.pages);
+      if (imageFile) payload.append("image", imageFile);
 
       if (editingId) {
         await axios.put(`/book/${editingId}`, payload, {
@@ -54,6 +76,7 @@ function BooksAdmin() {
       }
 
       setForm(emptyForm);
+      setImageFile(null);
       setEditingId(null);
       await load();
     } catch (err) {
@@ -71,7 +94,16 @@ function BooksAdmin() {
       category: b.category || "",
       image: b.image || "",
       title: b.title || "",
+      supplier: b.supplier || "",
+      author: b.author || "",
+      translator: b.translator || "",
+      publisher: b.publisher || "",
+      publishYear: b.publishYear ?? "",
+      weightGr: b.weightGr ?? "",
+      packageSize: b.packageSize || "",
+      pages: b.pages ?? "",
     });
+    setImageFile(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -123,16 +155,90 @@ function BooksAdmin() {
             className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
           />
           <input
-            value={form.image}
-            onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
-            placeholder="Image URL"
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files && e.target.files[0];
+              setImageFile(file || null);
+            }}
             className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
           />
+          {form.image ? (
+            <p className="text-xs opacity-70 md:col-span-2">
+              Ảnh hiện tại: {form.image}
+            </p>
+          ) : null}
           <input
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             placeholder="Title"
             className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700 md:col-span-2"
+          />
+          <input
+            value={form.supplier}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, supplier: e.target.value }))
+            }
+            placeholder="Tên Nhà Cung Cấp"
+            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
+          />
+          <input
+            value={form.author}
+            onChange={(e) => setForm((f) => ({ ...f, author: e.target.value }))}
+            placeholder="Tác giả"
+            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
+          />
+          <input
+            value={form.translator}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, translator: e.target.value }))
+            }
+            placeholder="Người Dịch"
+            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
+          />
+          <input
+            value={form.publisher}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, publisher: e.target.value }))
+            }
+            placeholder="NXB"
+            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
+          />
+          <input
+            value={form.publishYear}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, publishYear: e.target.value }))
+            }
+            placeholder="Năm XB"
+            type="number"
+            min={0}
+            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
+          />
+          <input
+            value={form.weightGr}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, weightGr: e.target.value }))
+            }
+            placeholder="Trọng lượng (gr)"
+            type="number"
+            min={0}
+            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
+          />
+          <input
+            value={form.packageSize}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, packageSize: e.target.value }))
+            }
+            placeholder="Kích Thước Bao Bì"
+            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
+          />
+          <input
+            value={form.pages}
+            onChange={(e) => setForm((f) => ({ ...f, pages: e.target.value }))}
+            placeholder="Số trang"
+            type="number"
+            min={0}
+            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
           />
 
           <div className="flex gap-3 md:col-span-2">
@@ -146,6 +252,7 @@ function BooksAdmin() {
                 onClick={() => {
                   setEditingId(null);
                   setForm(emptyForm);
+                  setImageFile(null);
                 }}
               >
                 Cancel

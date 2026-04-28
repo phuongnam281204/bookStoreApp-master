@@ -56,6 +56,42 @@ function Navbar() {
       <li>
         <Link to="/about">{t("nav.about")}</Link>
       </li>
+      {authUser?.role === "admin" ? (
+        <li>
+          <div className="dropdown dropdown-end">
+            <label
+              tabIndex={0}
+              className="flex items-center gap-1 px-3 py-2 rounded-lg leading-none hover:bg-base-200"
+            >
+              Admin
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="w-4 h-4"
+                aria-hidden="true"
+              >
+                <path d="M12 15.5 5.5 9h13L12 15.5Z" />
+              </svg>
+            </label>
+            <ul
+              tabIndex={0}
+              className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-xl bg-base-100 rounded-2xl w-44 border border-base-200"
+            >
+              <li>
+                <Link to="/admin/books" className="rounded-xl">
+                  Books
+                </Link>
+              </li>
+              <li>
+                <Link to="/admin/users" className="rounded-xl">
+                  Users
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </li>
+      ) : null}
     </>
   );
 

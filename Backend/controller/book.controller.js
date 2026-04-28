@@ -32,7 +32,25 @@ export const getBookById = async (req, res) => {
 
 export const createBook = async (req, res) => {
   try {
-    const { name, price, quantity, category, image, title } = req.body;
+    const {
+      name,
+      price,
+      quantity,
+      category,
+      image,
+      title,
+      supplier,
+      author,
+      translator,
+      publisher,
+      publishYear,
+      weightGr,
+      packageSize,
+      pages,
+    } = req.body;
+
+    const uploadedImage = req.file ? `/uploads/${req.file.filename}` : "";
+    const imageValue = uploadedImage || String(image || "").trim();
 
     const book = await Book.create({
       name: String(name || "").trim(),
@@ -42,8 +60,25 @@ export const createBook = async (req, res) => {
           ? 0
           : Number(quantity),
       category: String(category || "").trim(),
-      image: String(image || "").trim(),
+      image: imageValue,
       title: String(title || "").trim(),
+      supplier: String(supplier || "").trim(),
+      author: String(author || "").trim(),
+      translator: String(translator || "").trim(),
+      publisher: String(publisher || "").trim(),
+      publishYear:
+        publishYear === undefined || publishYear === null || publishYear === ""
+          ? 0
+          : Number(publishYear),
+      weightGr:
+        weightGr === undefined || weightGr === null || weightGr === ""
+          ? 0
+          : Number(weightGr),
+      packageSize: String(packageSize || "").trim(),
+      pages:
+        pages === undefined || pages === null || pages === ""
+          ? 0
+          : Number(pages),
     });
 
     return res.status(201).json({ message: "Book created", book });
@@ -61,6 +96,9 @@ export const updateBook = async (req, res) => {
     }
 
     const updates = {};
+    if (req.file) {
+      updates.image = `/uploads/${req.file.filename}`;
+    }
     for (const key of [
       "name",
       "price",
@@ -68,13 +106,33 @@ export const updateBook = async (req, res) => {
       "category",
       "image",
       "title",
+      "supplier",
+      "author",
+      "translator",
+      "publisher",
+      "publishYear",
+      "weightGr",
+      "packageSize",
+      "pages",
     ]) {
       if (!Object.prototype.hasOwnProperty.call(req.body, key)) continue;
 
-      if (key === "price" || key === "quantity") {
+      if (
+        key === "price" ||
+        key === "quantity" ||
+        key === "publishYear" ||
+        key === "weightGr" ||
+        key === "pages"
+      ) {
         const raw = req.body[key];
         updates[key] =
           raw === "" || raw === null || raw === undefined ? 0 : Number(raw);
+        continue;
+      }
+
+      if (key === "image") {
+        const trimmed = String(req.body[key] || "").trim();
+        if (trimmed) updates.image = trimmed;
         continue;
       }
 

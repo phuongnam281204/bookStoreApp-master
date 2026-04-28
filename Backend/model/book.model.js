@@ -7,6 +7,14 @@ const bookSchema = mongoose.Schema({
   category: String,
   image: String,
   title: String,
+  supplier: String,
+  author: String,
+  translator: String,
+  publisher: String,
+  publishYear: Number,
+  weightGr: Number,
+  packageSize: String,
+  pages: Number,
 });
 const Book = mongoose.model("Book", bookSchema);
 

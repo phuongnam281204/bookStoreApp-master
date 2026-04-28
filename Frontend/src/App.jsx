@@ -6,8 +6,10 @@ import { Toaster } from "react-hot-toast";
 import { useAuth } from "./context/AuthProvider";
 import Cart from "./cart/Cart";
 import BooksAdmin from "./admin/BooksAdmin";
+import UsersAdmin from "./admin/UsersAdmin";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import BookDetail from "./pages/BookDetail";
 
 function App() {
   const [authUser] = useAuth();
@@ -17,6 +19,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/course" element={<Courses />} />
+          <Route path="/book/:id" element={<BookDetail />} />
           <Route path="/cart" element={<Cart />} />
           <Route
             path="/admin/books"
@@ -25,6 +28,18 @@ function App() {
                 <Navigate to="/signup" />
               ) : authUser.role === "admin" ? (
                 <BooksAdmin />
+              ) : (
+                <Navigate to="/" />
+              )
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              !authUser ? (
+                <Navigate to="/signup" />
+              ) : authUser.role === "admin" ? (
+                <UsersAdmin />
               ) : (
                 <Navigate to="/" />
               )
