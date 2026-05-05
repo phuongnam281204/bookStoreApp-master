@@ -9,6 +9,10 @@ const emptyForm = {
   price: "",
   category: "",
   image: "",
+  images: "",
+  stock: "",
+  reserved: "",
+  lowStockThreshold: "",
   title: "",
   supplier: "",
   author: "",
@@ -24,8 +28,10 @@ function BooksAdmin() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
-  const [imageFile, setImageFile] = useState(null);
   const [editingId, setEditingId] = useState(null);
+  const [inventoryDrafts, setInventoryDrafts] = useState({});
+  const [inventoryLogs, setInventoryLogs] = useState([]);
+  const [selectedLogBookId, setSelectedLogBookId] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -48,20 +54,53 @@ function BooksAdmin() {
   const submit = async (e) => {
     e.preventDefault();
     try {
-      const payload = new FormData();
-      payload.append("name", form.name);
-      payload.append("price", form.price);
-      payload.append("category", form.category);
-      payload.append("title", form.title);
-      payload.append("supplier", form.supplier);
-      payload.append("author", form.author);
-      payload.append("translator", form.translator);
-      payload.append("publisher", form.publisher);
-      payload.append("publishYear", form.publishYear);
-      payload.append("weightGr", form.weightGr);
-      payload.append("packageSize", form.packageSize);
-      payload.append("pages", form.pages);
-      if (imageFile) payload.append("image", imageFile);
+      if (!form.image.trim()) {
+        toast.error("Can nhap URL anh chinh");
+        return;
+      }
+
+      const validateUrl = (value) => {
+        try {
+          const url = new URL(String(value));
+          return url.protocol === "http:" || url.protocol === "https:";
+        } catch (error) {
+          return false;
+        }
+      };
+
+      if (!validateUrl(form.image)) {
+        toast.error("URL anh chinh khong hop le");
+        return;
+      }
+
+      const galleryUrls = form.images
+        .split(",")
+        .map((url) => url.trim())
+        .filter(Boolean);
+      if (galleryUrls.some((url) => !validateUrl(url))) {
+        toast.error("URL anh chi tiet khong hop le");
+        return;
+      }
+
+      const payload = {
+        name: form.name,
+        price: form.price,
+        category: form.category,
+        image: form.image,
+        images: form.images,
+        stock: form.stock,
+        reserved: form.reserved,
+        lowStockThreshold: form.lowStockThreshold,
+        title: form.title,
+        supplier: form.supplier,
+        author: form.author,
+        translator: form.translator,
+        publisher: form.publisher,
+        publishYear: form.publishYear,
+        weightGr: form.weightGr,
+        packageSize: form.packageSize,
+        pages: form.pages,
+      };
 
       if (editingId) {
         await axios.put(`/book/${editingId}`, payload, {
@@ -76,8 +115,8 @@ function BooksAdmin() {
       }
 
       setForm(emptyForm);
-      setImageFile(null);
       setEditingId(null);
+      setSelectedLogBookId(null);
       await load();
     } catch (err) {
       const message =
@@ -93,6 +132,10 @@ function BooksAdmin() {
       price: b.price ?? "",
       category: b.category || "",
       image: b.image || "",
+      images: Array.isArray(b.images) ? b.images.join(", ") : "",
+      stock: b.stock ?? "",
+      reserved: b.reserved ?? "",
+      lowStockThreshold: b.lowStockThreshold ?? "",
       title: b.title || "",
       supplier: b.supplier || "",
       author: b.author || "",
@@ -103,7 +146,6 @@ function BooksAdmin() {
       packageSize: b.packageSize || "",
       pages: b.pages ?? "",
     });
-    setImageFile(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -116,6 +158,56 @@ function BooksAdmin() {
     } catch (err) {
       const message =
         err?.response?.data?.message || err?.message || "Delete failed";
+      toast.error(message);
+    }
+  };
+
+  const updateDraft = (id, patch) => {
+    setInventoryDrafts((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], ...patch },
+    }));
+  };
+
+  const applyInventory = async (id, type) => {
+    const draft = inventoryDrafts[id] || {};
+    const qty = Number(draft.qty || 0);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      toast.error("Nhap so luong hop le");
+      return;
+    }
+
+    try {
+      await axios.post(
+        `/book/${id}/inventory`,
+        { type, quantity: qty, note: draft.note || "" },
+        { withCredentials: true },
+      );
+      toast.success("Da cap nhat ton kho");
+      updateDraft(id, { qty: "", note: "" });
+      await load();
+      if (selectedLogBookId === id) {
+        await loadInventoryLogs(id);
+      }
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || err?.message || "Cap nhat that bai";
+      toast.error(message);
+    }
+  };
+
+  const loadInventoryLogs = async (id) => {
+    try {
+      const res = await axios.get(`/book/${id}/inventory-logs`, {
+        withCredentials: true,
+      });
+      setInventoryLogs(res.data || []);
+      setSelectedLogBookId(id);
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Khong tai duoc lich su";
       toast.error(message);
     }
   };
@@ -155,19 +247,47 @@ function BooksAdmin() {
             className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
           />
           <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files && e.target.files[0];
-              setImageFile(file || null);
-            }}
+            value={form.image}
+            onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
+            placeholder="URL anh chinh"
+            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
+            required
+          />
+          <input
+            value={form.stock}
+            onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
+            placeholder="Ton kho (stock)"
+            type="number"
+            min={0}
             className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
           />
-          {form.image ? (
-            <p className="text-xs opacity-70 md:col-span-2">
-              Ảnh hiện tại: {form.image}
-            </p>
-          ) : null}
+          <input
+            value={form.reserved}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, reserved: e.target.value }))
+            }
+            placeholder="Dang giu (reserved)"
+            type="number"
+            min={0}
+            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
+          />
+          <input
+            value={form.lowStockThreshold}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, lowStockThreshold: e.target.value }))
+            }
+            placeholder="Canh bao sap het"
+            type="number"
+            min={0}
+            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
+          />
+          <textarea
+            value={form.images}
+            onChange={(e) => setForm((f) => ({ ...f, images: e.target.value }))}
+            placeholder="Danh sach URL anh (phan cach boi dau phay)"
+            rows={2}
+            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700 md:col-span-2"
+          />
           <input
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
@@ -252,7 +372,7 @@ function BooksAdmin() {
                 onClick={() => {
                   setEditingId(null);
                   setForm(emptyForm);
-                  setImageFile(null);
+                  setSelectedLogBookId(null);
                 }}
               >
                 Cancel
@@ -272,36 +392,142 @@ function BooksAdmin() {
                     <th>Name</th>
                     <th>Category</th>
                     <th>Price</th>
+                    <th>Stock</th>
+                    <th>Reserved</th>
+                    <th>Available</th>
+                    <th>Alert</th>
+                    <th>Inventory</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {books.map((b) => (
-                    <tr key={b._id}>
-                      <td>{b.name}</td>
-                      <td>{b.category}</td>
-                      <td>${b.price}</td>
-                      <td className="flex gap-2">
-                        <button
-                          className="px-3 py-1 border rounded-md dark:border-slate-700"
-                          onClick={() => startEdit(b)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="px-3 py-1 bg-red-500 text-white rounded-md"
-                          onClick={() => remove(b._id)}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {books.map((b) => {
+                    const stock = Number(b.stock ?? b.quantity ?? 0);
+                    const reserved = Number(b.reserved ?? 0);
+                    const available = Math.max(0, stock - reserved);
+                    const threshold = Number(b.lowStockThreshold ?? 5);
+                    return (
+                      <tr key={b._id}>
+                        <td>{b.name}</td>
+                        <td>{b.category}</td>
+                        <td>${b.price}</td>
+                        <td>{stock}</td>
+                        <td>{reserved}</td>
+                        <td>{available}</td>
+                        <td>
+                          {available <= threshold ? (
+                            <span className="rounded-full bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-700">
+                              Sap het
+                            </span>
+                          ) : (
+                            <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
+                              On
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                              <input
+                                value={inventoryDrafts[b._id]?.qty || ""}
+                                onChange={(e) =>
+                                  updateDraft(b._id, { qty: e.target.value })
+                                }
+                                placeholder="Qty"
+                                type="number"
+                                min={1}
+                                className="w-20 px-2 py-1 border rounded-md dark:bg-slate-900 dark:border-slate-700"
+                              />
+                              <button
+                                type="button"
+                                className="px-2.5 py-1 rounded-md bg-emerald-500 text-white text-xs"
+                                onClick={() => applyInventory(b._id, "in")}
+                              >
+                                Nhap
+                              </button>
+                              <button
+                                type="button"
+                                className="px-2.5 py-1 rounded-md bg-amber-500 text-white text-xs"
+                                onClick={() => applyInventory(b._id, "out")}
+                              >
+                                Xuat
+                              </button>
+                            </div>
+                            <input
+                              value={inventoryDrafts[b._id]?.note || ""}
+                              onChange={(e) =>
+                                updateDraft(b._id, { note: e.target.value })
+                              }
+                              placeholder="Ghi chu"
+                              className="px-2 py-1 border rounded-md text-xs dark:bg-slate-900 dark:border-slate-700"
+                            />
+                            <button
+                              type="button"
+                              className="text-xs text-slate-600 hover:text-slate-900 dark:text-slate-300"
+                              onClick={() => loadInventoryLogs(b._id)}
+                            >
+                              Xem lich su
+                            </button>
+                          </div>
+                        </td>
+                        <td className="flex gap-2">
+                          <button
+                            className="px-3 py-1 border rounded-md dark:border-slate-700"
+                            onClick={() => startEdit(b)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="px-3 py-1 bg-red-500 text-white rounded-md"
+                            onClick={() => remove(b._id)}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
         </div>
+
+        {selectedLogBookId ? (
+          <div className="mt-8">
+            <h2 className="text-lg font-semibold">Lich su kho</h2>
+            {inventoryLogs.length ? (
+              <div className="mt-3 overflow-x-auto">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Qty</th>
+                      <th>Note</th>
+                      <th>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inventoryLogs.map((log) => (
+                      <tr key={log._id}>
+                        <td>{log.type}</td>
+                        <td>{log.quantity}</td>
+                        <td>{log.note || "-"}</td>
+                        <td>
+                          {log.createdAt
+                            ? new Date(log.createdAt).toLocaleString("vi-VN")
+                            : ""}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm opacity-70">Chua co lich su</p>
+            )}
+          </div>
+        ) : null}
       </div>
       <Footer />
     </>
