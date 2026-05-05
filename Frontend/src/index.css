@@ -21,3 +21,23 @@ h5,
 h6 {
   font-family: "Playfair Display", serif;
 }
+
+.page-transition {
+  animation: page-fade 220ms ease;
+  will-change: opacity;
+}
+
+@keyframes page-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-transition {
+    animation: none;
+  }
+}
