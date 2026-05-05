@@ -48,7 +48,18 @@ function Navbar() {
         <Link to="/">{t("nav.home")}</Link>
       </li>
       <li>
-        <Link to="/course">{t("nav.course")}</Link>
+        <Link to="/course" className="flex items-center gap-1">
+          <span>{t("nav.course")}</span>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="w-4 h-4 opacity-70"
+            aria-hidden="true"
+          >
+            <path d="M12 15.5 5.5 9h13L12 15.5Z" />
+          </svg>
+        </Link>
       </li>
       <li>
         <Link to="/contact">{t("nav.contact")}</Link>
@@ -56,44 +67,12 @@ function Navbar() {
       <li>
         <Link to="/about">{t("nav.about")}</Link>
       </li>
-      {authUser?.role === "admin" ? (
-        <li>
-          <div className="dropdown dropdown-end">
-            <label
-              tabIndex={0}
-              className="flex items-center gap-1 px-3 py-2 rounded-lg leading-none hover:bg-base-200"
-            >
-              Admin
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-4 h-4"
-                aria-hidden="true"
-              >
-                <path d="M12 15.5 5.5 9h13L12 15.5Z" />
-              </svg>
-            </label>
-            <ul
-              tabIndex={0}
-              className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-xl bg-base-100 rounded-2xl w-44 border border-base-200"
-            >
-              <li>
-                <Link to="/admin/books" className="rounded-xl">
-                  Books
-                </Link>
-              </li>
-              <li>
-                <Link to="/admin/users" className="rounded-xl">
-                  Users
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </li>
-      ) : null}
     </>
   );
+
+  const openAuthModal = (tab) => {
+    window.dispatchEvent(new CustomEvent("auth:open", { detail: { tab } }));
+  };
 
   return (
     <div
@@ -159,7 +138,7 @@ function Navbar() {
                   <input
                     type="text"
                     className="grow"
-                    placeholder={t("nav.search")}
+                    placeholder={t("nav.searchPlaceholder")}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
@@ -257,33 +236,91 @@ function Navbar() {
                     </svg>
                   </div>
                 </Link>
-                <div
-                  className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-base-200"
-                  title={authUser.fullname || authUser.email}
-                  aria-label={authUser.fullname || authUser.email}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="w-4 h-4 opacity-80"
-                    aria-hidden="true"
+                {authUser?.role === "admin" ? (
+                  <div className="dropdown dropdown-end hidden sm:block">
+                    <label
+                      tabIndex={0}
+                      className="flex items-center gap-2 px-3 py-1 rounded-full bg-base-200 cursor-pointer"
+                      title={authUser.fullname || authUser.email}
+                      aria-label={authUser.fullname || authUser.email}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="w-4 h-4 opacity-80"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm-3 5a3 3 0 1 1 6 0 3 3 0 0 1-6 0Z"
+                          clipRule="evenodd"
+                        />
+                        <path d="M4 20a8 8 0 0 1 16 0v1H4v-1Z" />
+                      </svg>
+                      <span className="max-w-40 truncate text-sm font-medium">
+                        {authUser.fullname || authUser.email}
+                      </span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="w-4 h-4 opacity-70"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 15.5 5.5 9h13L12 15.5Z" />
+                      </svg>
+                    </label>
+                    <ul
+                      tabIndex={0}
+                      className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-xl bg-base-100 rounded-2xl w-52 border border-base-200"
+                    >
+                      <li>
+                        <Link to="/admin/books" className="rounded-xl">
+                          Quản lý sách
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/admin/orders" className="rounded-xl">
+                          Quản lý đơn hàng
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/admin/users" className="rounded-xl">
+                          Quản lý user
+                        </Link>
+                      </li>
+                    </ul>
+                  </div>
+                ) : (
+                  <div
+                    className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-base-200"
+                    title={authUser.fullname || authUser.email}
+                    aria-label={authUser.fullname || authUser.email}
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm-3 5a3 3 0 1 1 6 0 3 3 0 0 1-6 0Z"
-                      clipRule="evenodd"
-                    />
-                    <path d="M4 20a8 8 0 0 1 16 0v1H4v-1Z" />
-                  </svg>
-                  <span className="max-w-40 truncate text-sm font-medium">
-                    {authUser.fullname || authUser.email}
-                  </span>
-                </div>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="w-4 h-4 opacity-80"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm-3 5a3 3 0 1 1 6 0 3 3 0 0 1-6 0Z"
+                        clipRule="evenodd"
+                      />
+                      <path d="M4 20a8 8 0 0 1 16 0v1H4v-1Z" />
+                    </svg>
+                    <span className="max-w-40 truncate text-sm font-medium">
+                      {authUser.fullname || authUser.email}
+                    </span>
+                  </div>
+                )}
                 <Logout />
               </div>
             ) : (
-              <div>
+              <div className="flex items-center gap-2">
                 <Link
                   to="/cart"
                   className="btn btn-ghost btn-sm btn-circle mr-2"
@@ -310,12 +347,20 @@ function Navbar() {
                 <button
                   type="button"
                   className="btn btn-primary btn-sm whitespace-nowrap"
-                  onClick={() =>
-                    document.getElementById("my_modal_3").showModal()
-                  }
+                  onClick={() => openAuthModal("login")}
                 >
                   {t("nav.login")}
                 </button>
+                <Link
+                  to="/signup"
+                  className="text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    openAuthModal("signup");
+                  }}
+                >
+                  {t("nav.register")}
+                </Link>
                 <Login />
               </div>
             )}

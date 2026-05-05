@@ -16,7 +16,9 @@ const messages = {
     "nav.contact": "Liên hệ",
     "nav.about": "Giới thiệu",
     "nav.search": "Tìm kiếm",
+    "nav.searchPlaceholder": "Tìm tên sách, tác giả, nhà xuất bản...",
     "nav.login": "Đăng nhập",
+    "nav.register": "Đăng ký",
     "nav.logout": "Đăng xuất",
 
     "course.searchResults": 'Hiển thị {{count}} kết quả cho "{{q}}"',
@@ -54,6 +56,20 @@ const messages = {
     "auth.toast.loginFailed": "Đăng nhập thất bại",
     "auth.toast.logoutSuccess": "Đăng xuất thành công",
 
+    "auth.fieldRequired": "Trường này bắt buộc",
+    "auth.password.show": "Hiện mật khẩu",
+    "auth.password.hide": "Ẩn mật khẩu",
+
+    "auth.signup.title": "Đăng ký",
+    "auth.signup.name": "Họ và tên",
+    "auth.signup.email": "Email",
+    "auth.signup.password": "Mật khẩu",
+    "auth.signup.namePlaceholder": "Nhập họ và tên",
+    "auth.signup.emailPlaceholder": "Nhập email",
+    "auth.signup.passwordPlaceholder": "Nhập mật khẩu",
+    "auth.signup.submit": "Đăng ký",
+    "auth.signup.haveAccount": "Đã có tài khoản?",
+
     "auth.login.title": "Đăng nhập",
     "auth.login.email": "Email",
     "auth.login.password": "Mật khẩu",
@@ -74,7 +90,9 @@ const messages = {
     "nav.contact": "Contact",
     "nav.about": "About",
     "nav.search": "Search",
+    "nav.searchPlaceholder": "Search by title, author, publisher...",
     "nav.login": "Login",
+    "nav.register": "Register",
     "nav.logout": "Logout",
 
     "course.searchResults": 'Showing {{count}} result(s) for "{{q}}"',
@@ -110,6 +128,20 @@ const messages = {
     "auth.toast.loginSuccess": "Logged in successfully",
     "auth.toast.loginFailed": "Login failed",
     "auth.toast.logoutSuccess": "Logout successfully",
+
+    "auth.fieldRequired": "This field is required",
+    "auth.password.show": "Show password",
+    "auth.password.hide": "Hide password",
+
+    "auth.signup.title": "Signup",
+    "auth.signup.name": "Name",
+    "auth.signup.email": "Email",
+    "auth.signup.password": "Password",
+    "auth.signup.namePlaceholder": "Enter your fullname",
+    "auth.signup.emailPlaceholder": "Enter your email",
+    "auth.signup.passwordPlaceholder": "Enter your password",
+    "auth.signup.submit": "Signup",
+    "auth.signup.haveAccount": "Have account?",
 
     "auth.login.title": "Login",
     "auth.login.email": "Email",
