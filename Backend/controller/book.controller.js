@@ -1,5 +1,16 @@
 import mongoose from "mongoose";
 import Book from "../model/book.model.js";
+import InventoryLog from "../model/inventoryLog.model.js";
+
+const isValidUrl = (value) => {
+  if (!value) return false;
+  try {
+    const url = new URL(String(value));
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch (error) {
+    return false;
+  }
+};
 
 export const getBooks = async (req, res) => {
   try {
@@ -36,8 +47,12 @@ export const createBook = async (req, res) => {
       name,
       price,
       quantity,
+      stock,
+      reserved,
+      lowStockThreshold,
       category,
       image,
+      images,
       title,
       supplier,
       author,
@@ -49,8 +64,37 @@ export const createBook = async (req, res) => {
       pages,
     } = req.body;
 
-    const uploadedImage = req.file ? `/uploads/${req.file.filename}` : "";
-    const imageValue = uploadedImage || String(image || "").trim();
+    const parseImagesField = (value) => {
+      if (Array.isArray(value)) {
+        return value.map((v) => String(v || "").trim()).filter(Boolean);
+      }
+      const raw = String(value || "").trim();
+      if (!raw) return [];
+      if (raw.startsWith("[")) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            return parsed.map((v) => String(v || "").trim()).filter(Boolean);
+          }
+        } catch (err) {
+          return [];
+        }
+      }
+      return raw
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean);
+    };
+
+    const bodyImage = String(image || "").trim();
+    const bodyImages = parseImagesField(images);
+
+    if (!bodyImage || !isValidUrl(bodyImage)) {
+      return res.status(400).json({ message: "Main image URL is required" });
+    }
+    if (bodyImages.some((img) => !isValidUrl(img))) {
+      return res.status(400).json({ message: "Invalid gallery image URL" });
+    }
 
     const book = await Book.create({
       name: String(name || "").trim(),
@@ -59,8 +103,25 @@ export const createBook = async (req, res) => {
         quantity === undefined || quantity === null || quantity === ""
           ? 0
           : Number(quantity),
+      stock:
+        stock === undefined || stock === null || stock === ""
+          ? quantity === undefined || quantity === null || quantity === ""
+            ? 0
+            : Number(quantity)
+          : Number(stock),
+      reserved:
+        reserved === undefined || reserved === null || reserved === ""
+          ? 0
+          : Number(reserved),
+      lowStockThreshold:
+        lowStockThreshold === undefined ||
+        lowStockThreshold === null ||
+        lowStockThreshold === ""
+          ? 5
+          : Number(lowStockThreshold),
       category: String(category || "").trim(),
-      image: imageValue,
+      image: bodyImage,
+      images: bodyImages,
       title: String(title || "").trim(),
       supplier: String(supplier || "").trim(),
       author: String(author || "").trim(),
@@ -95,16 +156,44 @@ export const updateBook = async (req, res) => {
       return res.status(400).json({ message: "Invalid id" });
     }
 
-    const updates = {};
-    if (req.file) {
-      updates.image = `/uploads/${req.file.filename}`;
+    const book = await Book.findById(id);
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
     }
+
+    const parseImagesField = (value) => {
+      if (Array.isArray(value)) {
+        return value.map((v) => String(v || "").trim()).filter(Boolean);
+      }
+      const raw = String(value || "").trim();
+      if (!raw) return [];
+      if (raw.startsWith("[")) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            return parsed.map((v) => String(v || "").trim()).filter(Boolean);
+          }
+        } catch (err) {
+          return [];
+        }
+      }
+      return raw
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean);
+    };
+
+    const updates = {};
     for (const key of [
       "name",
       "price",
       "quantity",
+      "stock",
+      "reserved",
+      "lowStockThreshold",
       "category",
       "image",
+      "images",
       "title",
       "supplier",
       "author",
@@ -120,6 +209,9 @@ export const updateBook = async (req, res) => {
       if (
         key === "price" ||
         key === "quantity" ||
+        key === "stock" ||
+        key === "reserved" ||
+        key === "lowStockThreshold" ||
         key === "publishYear" ||
         key === "weightGr" ||
         key === "pages"
@@ -132,17 +224,29 @@ export const updateBook = async (req, res) => {
 
       if (key === "image") {
         const trimmed = String(req.body[key] || "").trim();
-        if (trimmed) updates.image = trimmed;
+        if (trimmed) {
+          if (!isValidUrl(trimmed)) {
+            return res.status(400).json({ message: "Invalid main image URL" });
+          }
+          updates.image = trimmed;
+        }
+        continue;
+      }
+
+      if (key === "images") {
+        const parsedImages = parseImagesField(req.body[key]);
+        if (parsedImages.some((img) => !isValidUrl(img))) {
+          return res.status(400).json({ message: "Invalid gallery image URL" });
+        }
+        updates.images = parsedImages;
         continue;
       }
 
       updates[key] = String(req.body[key] || "").trim();
     }
 
-    const book = await Book.findByIdAndUpdate(id, updates, { new: true });
-    if (!book) {
-      return res.status(404).json({ message: "Book not found" });
-    }
+    Object.assign(book, updates);
+    await book.save();
 
     return res.status(200).json({ message: "Book updated", book });
   } catch (error) {
@@ -158,12 +262,93 @@ export const deleteBook = async (req, res) => {
       return res.status(400).json({ message: "Invalid id" });
     }
 
-    const book = await Book.findByIdAndDelete(id);
+    const book = await Book.findById(id);
     if (!book) {
       return res.status(404).json({ message: "Book not found" });
     }
 
+    await Book.findByIdAndDelete(id);
+
     return res.status(200).json({ message: "Book deleted" });
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const updateInventory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+
+    const { type, quantity, note } = req.body;
+    const qty = Number(quantity);
+    if (!type || !Number.isFinite(qty) || qty < 0) {
+      return res.status(400).json({ message: "Invalid payload" });
+    }
+
+    const book = await Book.findById(id);
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+
+    const stock = Number(book.stock || 0);
+    const reserved = Number(book.reserved || 0);
+    const available = Math.max(0, stock - reserved);
+
+    if (type === "in") {
+      book.stock = stock + qty;
+    } else if (type === "out") {
+      if (qty > stock) {
+        return res.status(400).json({ message: "Not enough stock" });
+      }
+      book.stock = stock - qty;
+    } else if (type === "reserve") {
+      if (qty > available) {
+        return res.status(400).json({ message: "Not enough available" });
+      }
+      book.reserved = reserved + qty;
+    } else if (type === "release") {
+      if (qty > reserved) {
+        return res.status(400).json({ message: "Not enough reserved" });
+      }
+      book.reserved = reserved - qty;
+    } else if (type === "adjust") {
+      book.stock = qty;
+    } else {
+      return res.status(400).json({ message: "Invalid type" });
+    }
+
+    await book.save();
+
+    await InventoryLog.create({
+      bookId: book._id,
+      type,
+      quantity: qty,
+      note: String(note || "").trim(),
+      createdBy: req.user?.userId,
+    });
+
+    return res.status(200).json({ message: "Inventory updated", book });
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getInventoryLogs = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+    const limit = Number(req.query.limit || 30);
+    const logs = await InventoryLog.find({ bookId: id })
+      .sort({ createdAt: -1 })
+      .limit(Number.isFinite(limit) ? limit : 30);
+    return res.status(200).json(logs);
   } catch (error) {
     console.log("Error: ", error);
     return res.status(500).json({ message: "Internal server error" });
