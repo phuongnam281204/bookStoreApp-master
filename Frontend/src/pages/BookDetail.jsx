@@ -14,6 +14,7 @@ function BookDetail() {
   const [authUser] = useAuth();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
     const load = async () => {
@@ -50,6 +51,26 @@ function BookDetail() {
     navigate("/cart");
   };
 
+  const images =
+    book?.images && book.images.length
+      ? book.images
+      : book?.image
+        ? [book.image]
+        : [];
+  const activeImage = images[activeIndex] || book?.image || "";
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [book?._id]);
+
+  useEffect(() => {
+    if (images.length <= 1) return undefined;
+    const intervalId = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % images.length);
+    }, 2500);
+    return () => clearInterval(intervalId);
+  }, [images.length]);
+
   const detailRows = [
     { label: "Tên Nhà Cung Cấp", value: book?.supplier },
     { label: "Tác giả", value: book?.author },
@@ -75,25 +96,33 @@ function BookDetail() {
               <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-700 rounded-2xl shadow p-4">
                 <div className="rounded-xl overflow-hidden border border-slate-100 dark:border-slate-700 bg-white">
                   <img
-                    src={book.image}
+                    src={activeImage}
                     alt={book.name}
                     className="w-full object-cover"
                   />
                 </div>
-                <div className="mt-4 grid grid-cols-4 gap-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className="border rounded-lg overflow-hidden bg-white dark:bg-slate-800 dark:border-slate-700"
-                    >
-                      <img
-                        src={book.image}
-                        alt={book.name}
-                        className="h-16 w-full object-cover"
-                      />
-                    </div>
-                  ))}
-                </div>
+                {images.length ? (
+                  <div className="mt-4 grid grid-cols-4 gap-2">
+                    {images.map((img, i) => (
+                      <button
+                        key={`${img}-${i}`}
+                        type="button"
+                        onClick={() => setActiveIndex(i)}
+                        className={`border rounded-lg overflow-hidden bg-white dark:bg-slate-800 dark:border-slate-700 transition ${
+                          i === activeIndex
+                            ? "ring-2 ring-rose-500"
+                            : "hover:border-rose-300"
+                        }`}
+                      >
+                        <img
+                          src={img}
+                          alt={book.name}
+                          className="h-16 w-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
 
                 <div className="mt-5 grid gap-2">
                   <button
