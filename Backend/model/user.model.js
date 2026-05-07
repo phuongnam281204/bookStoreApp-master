@@ -30,6 +30,11 @@ const userSchema = mongoose.Schema({
     default: "user",
   },
 
+  tokenVersion: {
+    type: Number,
+    default: 0,
+  },
+
   resetPasswordTokenHash: {
     type: String,
     default: null,

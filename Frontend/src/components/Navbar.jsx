@@ -293,28 +293,50 @@ function Navbar() {
                     </ul>
                   </div>
                 ) : (
-                  <div
-                    className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-base-200"
-                    title={authUser.fullname || authUser.email}
-                    aria-label={authUser.fullname || authUser.email}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      className="w-4 h-4 opacity-80"
-                      aria-hidden="true"
+                  <div className="dropdown dropdown-end hidden sm:block">
+                    <label
+                      tabIndex={0}
+                      className="flex items-center gap-2 px-3 py-1 rounded-full bg-base-200 cursor-pointer"
+                      title={authUser.fullname || authUser.email}
+                      aria-label={authUser.fullname || authUser.email}
                     >
-                      <path
-                        fillRule="evenodd"
-                        d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm-3 5a3 3 0 1 1 6 0 3 3 0 0 1-6 0Z"
-                        clipRule="evenodd"
-                      />
-                      <path d="M4 20a8 8 0 0 1 16 0v1H4v-1Z" />
-                    </svg>
-                    <span className="max-w-40 truncate text-sm font-medium">
-                      {authUser.fullname || authUser.email}
-                    </span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="w-4 h-4 opacity-80"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm-3 5a3 3 0 1 1 6 0 3 3 0 0 1-6 0Z"
+                          clipRule="evenodd"
+                        />
+                        <path d="M4 20a8 8 0 0 1 16 0v1H4v-1Z" />
+                      </svg>
+                      <span className="max-w-40 truncate text-sm font-medium">
+                        {authUser.fullname || authUser.email}
+                      </span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="w-4 h-4 opacity-70"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 15.5 5.5 9h13L12 15.5Z" />
+                      </svg>
+                    </label>
+                    <ul
+                      tabIndex={0}
+                      className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-xl bg-base-100 rounded-2xl w-52 border border-base-200"
+                    >
+                      <li>
+                        <Link to="/orders" className="rounded-xl">
+                          Đơn hàng của tôi
+                        </Link>
+                      </li>
+                    </ul>
                   </div>
                 )}
                 <Logout />

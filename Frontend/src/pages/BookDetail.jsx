@@ -71,6 +71,15 @@ function BookDetail() {
     return () => clearInterval(intervalId);
   }, [images.length]);
 
+  const topMetaRows = [
+    { label: "Nhà cung cấp", value: book?.supplier },
+    { label: "Nhà xuất bản", value: book?.publisher },
+    { label: "Tác giả", value: book?.author },
+    { label: "Người dịch", value: book?.translator },
+    { label: "Năm XB", value: book?.publishYear },
+    { label: "Số trang", value: book?.pages },
+  ];
+
   const detailRows = [
     { label: "Tên Nhà Cung Cấp", value: book?.supplier },
     { label: "Tác giả", value: book?.author },
@@ -146,22 +155,34 @@ function BookDetail() {
                 <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-700 rounded-2xl shadow p-6">
                   <div className="flex flex-wrap items-center gap-2">
                     {book.category ? (
-                      <span className="badge badge-outline">
+                      <span className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200">
                         {book.category}
                       </span>
                     ) : null}
-                    <span className="badge badge-secondary">Flash Sale</span>
+                    <span className="rounded-full bg-rose-600 px-3 py-1 text-xs font-semibold text-white">
+                      Flash Sale
+                    </span>
                   </div>
-                  <h1 className="mt-3 text-2xl md:text-3xl font-serif font-semibold">
+                  <h1 className="mt-4 text-2xl md:text-3xl font-serif font-semibold text-slate-800 dark:text-white">
                     {book.name}
                   </h1>
-                  <p className="mt-2 opacity-80">{book.title}</p>
 
-                  <div className="mt-5 flex items-end gap-3">
+                  <div className="mt-4 grid gap-2 text-sm text-slate-600 dark:text-slate-300 sm:grid-cols-2">
+                    {topMetaRows.map((row) => (
+                      <div key={row.label} className="flex gap-2">
+                        <span className="opacity-70">{row.label}:</span>
+                        <span className="font-medium text-slate-800 dark:text-slate-100">
+                          {row.value || "-"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap items-end gap-3">
                     <span className="text-3xl font-bold text-rose-600">
                       {Number(book.price || 0).toLocaleString("vi-VN")}đ
                     </span>
-                    <span className="text-sm line-through opacity-50">
+                    <span className="text-sm line-through text-slate-400">
                       {Number(book.price || 0)
                         ? Number(book.price * 1.2).toLocaleString("vi-VN") + "đ"
                         : ""}
@@ -188,7 +209,7 @@ function BookDetail() {
 
                 <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-700 rounded-2xl shadow p-6">
                   <h2 className="text-lg font-semibold">Mô tả sản phẩm</h2>
-                  <p className="mt-3 text-sm leading-6 opacity-80">
+                  <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
                     {book.title || "Chưa có mô tả."}
                   </p>
                 </div>

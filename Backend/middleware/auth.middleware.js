@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import User from "../model/user.model.js";
 
 const getJwtSecret = () => {
   const secret = process.env.JWT_SECRET;
@@ -17,7 +18,7 @@ const getTokenFromRequest = (req) => {
   return null;
 };
 
-export const requireAuth = (req, res, next) => {
+export const requireAuth = async (req, res, next) => {
   const token = getTokenFromRequest(req);
   const secret = getJwtSecret();
 
@@ -30,7 +31,14 @@ export const requireAuth = (req, res, next) => {
 
   try {
     const payload = jwt.verify(token, secret);
-    req.user = { userId: payload.userId, role: payload.role };
+    const user = await User.findById(payload.userId).select(
+      "role tokenVersion",
+    );
+    if (!user) return res.status(401).json({ message: "Unauthorized" });
+    if ((payload.tokenVersion ?? 0) !== (user.tokenVersion ?? 0)) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    req.user = { userId: user._id.toString(), role: user.role };
     return next();
   } catch {
     return res.status(401).json({ message: "Unauthorized" });

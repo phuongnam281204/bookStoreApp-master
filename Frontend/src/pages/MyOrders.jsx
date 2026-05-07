@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import Navbar from "../components/Navbar";
@@ -23,17 +23,16 @@ const paymentLabel = (status) => {
   return "Chưa thanh toán";
 };
 
-function OrdersAdmin() {
+function MyOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState(null);
+  const [confirmOrder, setConfirmOrder] = useState(null);
 
   const load = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("/order", { withCredentials: true });
+      const res = await axios.get("/order/my", { withCredentials: true });
       setOrders(res.data || []);
     } catch (err) {
       const message =
@@ -48,50 +47,15 @@ function OrdersAdmin() {
     load();
   }, []);
 
-  const filteredOrders = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-    return orders.filter((order) => {
-      if (filter !== "all" && order.status !== filter) return false;
-      if (!keyword) return true;
-
-      const name = String(
-        order.userId?.fullname || order.shippingAddress?.fullName || "",
-      ).toLowerCase();
-      const email = String(
-        order.userId?.email || order.shippingAddress?.email || "",
-      ).toLowerCase();
-      const id = String(order._id || "").toLowerCase();
-      return (
-        name.includes(keyword) ||
-        email.includes(keyword) ||
-        id.includes(keyword)
-      );
-    });
-  }, [orders, filter, search]);
-
-  const markPaid = async (orderId) => {
-    if (!orderId) return;
-    setBusyId(orderId);
-    try {
-      await axios.patch(
-        `/order/${orderId}/status`,
-        { paymentStatus: "paid" },
-        { withCredentials: true },
-      );
-      toast.success("Đã cập nhật thanh toán");
-      await load();
-    } catch (err) {
-      const message =
-        err?.response?.data?.message || err?.message || "Cập nhật thất bại";
-      toast.error(message);
-    } finally {
-      setBusyId(null);
-    }
+  const openCancelModal = (order) => {
+    if (!order?._id) return;
+    setConfirmOrder(order);
+    const modal = document.getElementById("cancel_order_modal");
+    if (modal && typeof modal.showModal === "function") modal.showModal();
   };
 
   const cancelOrder = async (orderId) => {
     if (!orderId) return;
-    if (!confirm("Hủy đơn hàng này?")) return;
     setBusyId(orderId);
     try {
       await axios.post(
@@ -107,6 +71,7 @@ function OrdersAdmin() {
       toast.error(message);
     } finally {
       setBusyId(null);
+      setConfirmOrder(null);
     }
   };
 
@@ -116,9 +81,9 @@ function OrdersAdmin() {
       <div className="max-w-screen-2xl container mx-auto md:px-20 px-4 min-h-screen pt-28 pb-16">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Admin: Orders</h1>
+            <h1 className="text-2xl font-bold">Đơn hàng của tôi</h1>
             <p className="mt-1 text-sm opacity-70">
-              Quản lý đơn hàng và trạng thái thanh toán.
+              Theo dõi trạng thái và hủy đơn chưa thanh toán.
             </p>
           </div>
           <button
@@ -129,45 +94,19 @@ function OrdersAdmin() {
           </button>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-[1fr_240px]">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm theo tên, email, mã đơn"
-            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-          />
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-          >
-            <option value="all">Tất cả trạng thái</option>
-            <option value="placed">Đã đặt</option>
-            <option value="paid">Đã thanh toán</option>
-            <option value="cancelled">Đã hủy</option>
-          </select>
-        </div>
-
         <div className="mt-6">
           {loading ? (
             <p>Loading...</p>
-          ) : !filteredOrders.length ? (
+          ) : !orders.length ? (
             <div className="rounded-2xl border border-dashed p-8 text-center">
-              Chưa có đơn hàng.
+              Bạn chưa có đơn hàng nào.
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredOrders.map((order) => {
+              {orders.map((order) => {
                 const isCancelled = order.status === "cancelled";
                 const isPaid = order.paymentStatus === "paid";
-                const canMarkPaid = !isPaid && !isCancelled;
                 const canCancel = !isCancelled && !isPaid;
-                const customerName =
-                  order.userId?.fullname ||
-                  order.shippingAddress?.fullName ||
-                  "";
-                const customerEmail =
-                  order.userId?.email || order.shippingAddress?.email || "";
 
                 return (
                   <div
@@ -182,14 +121,6 @@ function OrdersAdmin() {
                             #{String(order._id).slice(-6)}
                           </span>
                         </div>
-                        <div className="mt-2 text-lg font-semibold">
-                          {customerName || "Khách hàng"}
-                        </div>
-                        {customerEmail ? (
-                          <div className="text-sm text-slate-500">
-                            {customerEmail}
-                          </div>
-                        ) : null}
                         <div className="mt-2 text-sm text-slate-500">
                           {order.createdAt
                             ? new Date(order.createdAt).toLocaleString("vi-VN")
@@ -239,16 +170,8 @@ function OrdersAdmin() {
                     <div className="mt-4 flex flex-wrap gap-3">
                       <button
                         type="button"
-                        className="px-3 py-2 rounded-md bg-emerald-500 text-white disabled:opacity-50"
-                        onClick={() => markPaid(order._id)}
-                        disabled={!canMarkPaid || busyId === order._id}
-                      >
-                        Xác nhận đã thanh toán
-                      </button>
-                      <button
-                        type="button"
                         className="px-3 py-2 rounded-md border border-rose-500 text-rose-600 disabled:opacity-50"
-                        onClick={() => cancelOrder(order._id)}
+                        onClick={() => openCancelModal(order)}
                         disabled={!canCancel || busyId === order._id}
                       >
                         Hủy đơn
@@ -261,9 +184,59 @@ function OrdersAdmin() {
           )}
         </div>
       </div>
+      <dialog id="cancel_order_modal" className="modal">
+        <div className="modal-box">
+          <h3 className="text-lg font-semibold">Xác nhận hủy đơn</h3>
+          <p className="mt-2 text-sm text-slate-600">
+            Bạn có chắc chắn muốn hủy đơn hàng này không?
+          </p>
+          {confirmOrder ? (
+            <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+              <div>
+                Mã đơn:{" "}
+                <span className="font-semibold">
+                  #{String(confirmOrder._id).slice(-6)}
+                </span>
+              </div>
+              <div className="mt-1">
+                Tổng tiền:{" "}
+                <span className="font-semibold">
+                  {formatVnd(confirmOrder.total)}
+                </span>
+              </div>
+            </div>
+          ) : null}
+          <div className="modal-action">
+            <form method="dialog" className="flex gap-2">
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => {
+                  setConfirmOrder(null);
+                  document.getElementById("cancel_order_modal")?.close();
+                }}
+              >
+                Quay lại
+              </button>
+              <button
+                type="button"
+                className="btn bg-rose-600 text-white hover:bg-rose-700"
+                onClick={() => {
+                  if (!confirmOrder?._id) return;
+                  document.getElementById("cancel_order_modal")?.close();
+                  cancelOrder(confirmOrder._id);
+                }}
+                disabled={busyId === confirmOrder?._id}
+              >
+                Xác nhận hủy
+              </button>
+            </form>
+          </div>
+        </div>
+      </dialog>
       <Footer />
     </>
   );
 }
 
-export default OrdersAdmin;
+export default MyOrders;

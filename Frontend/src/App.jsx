@@ -12,6 +12,8 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import BookDetail from "./pages/BookDetail";
 import Checkout from "./pages/Checkout";
+import MyOrders from "./pages/MyOrders";
+import ResetPassword from "./pages/ResetPassword";
 
 function App() {
   const [authUser] = useAuth();
@@ -26,6 +28,11 @@ function App() {
             <Route path="/book/:id" element={<BookDetail />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route
+              path="/orders"
+              element={!authUser ? <Navigate to="/signup" /> : <MyOrders />}
+            />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route
               path="/admin/books"
               element={

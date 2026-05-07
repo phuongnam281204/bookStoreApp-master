@@ -6,7 +6,7 @@ import User from "../model/user.model.js";
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
 export const createOrder = async (req, res) => {
-  let decremented = [];
+  let reservedAdjusted = [];
   let voucherConsumedAt = null;
   let voucherCodeNormalized = "";
   try {
@@ -79,7 +79,7 @@ export const createOrder = async (req, res) => {
     }
 
     const books = await Book.find({ _id: { $in: bookIds } }).select(
-      "name price quantity",
+      "name price stock reserved",
     );
     const bookById = new Map(books.map((b) => [b._id.toString(), b]));
 
@@ -104,26 +104,31 @@ export const createOrder = async (req, res) => {
       pricedItems.reduce((sum, x) => sum + x.qty * x.price, 0),
     );
 
-    // Inventory check + decrement (compensating on partial failure)
-    decremented = [];
+    // Inventory check + reserve (compensating on partial failure)
+    reservedAdjusted = [];
     for (const it of pricedItems) {
       const updated = await Book.findOneAndUpdate(
-        { _id: it.bookId, quantity: { $gte: it.qty } },
-        { $inc: { quantity: -it.qty } },
+        {
+          _id: it.bookId,
+          $expr: {
+            $gte: [{ $subtract: ["$stock", "$reserved"] }, it.qty],
+          },
+        },
+        { $inc: { reserved: it.qty } },
         { new: true },
       );
 
       if (!updated) {
-        for (const done of decremented) {
+        for (const done of reservedAdjusted) {
           await Book.findByIdAndUpdate(done.bookId, {
-            $inc: { quantity: done.qty },
+            $inc: { reserved: -done.qty },
           });
         }
         return res.status(400).json({
           message: `Not enough stock for: ${it.name}`,
         });
       }
-      decremented.push({ bookId: it.bookId, qty: it.qty });
+      reservedAdjusted.push({ bookId: it.bookId, qty: it.qty });
     }
 
     let appliedDiscountPercent = 0;
@@ -142,9 +147,9 @@ export const createOrder = async (req, res) => {
       ).select("voucher.discountPercent voucher.code voucher.usedAt");
 
       if (!updatedUser) {
-        for (const done of decremented) {
+        for (const done of reservedAdjusted) {
           await Book.findByIdAndUpdate(done.bookId, {
-            $inc: { quantity: done.qty },
+            $inc: { reserved: -done.qty },
           });
         }
         return res.status(400).json({ message: "Invalid voucher" });
@@ -185,12 +190,12 @@ export const createOrder = async (req, res) => {
 
     return res.status(201).json({ message: "Order created", order });
   } catch (error) {
-    // Best-effort rollback if inventory was decremented but order creation failed.
+    // Best-effort rollback if inventory was reserved but order creation failed.
     try {
-      if (Array.isArray(decremented) && decremented.length) {
-        for (const done of decremented) {
+      if (Array.isArray(reservedAdjusted) && reservedAdjusted.length) {
+        for (const done of reservedAdjusted) {
           await Book.findByIdAndUpdate(done.bookId, {
-            $inc: { quantity: done.qty },
+            $inc: { reserved: -done.qty },
           });
         }
       }
@@ -227,6 +232,172 @@ export const getOrdersByUser = async (req, res) => {
 
     const orders = await Order.find({ userId }).sort({ createdAt: -1 });
     return res.status(200).json(orders);
+  } catch (error) {
+    console.log("Error: " + error.message);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getAllOrders = async (req, res) => {
+  try {
+    const limit = Number(req.query.limit || 200);
+    const orders = await Order.find({})
+      .sort({ createdAt: -1 })
+      .limit(Number.isFinite(limit) ? limit : 200)
+      .populate("userId", "fullname email");
+    return res.status(200).json(orders);
+  } catch (error) {
+    console.log("Error: " + error.message);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const cancelOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid order id" });
+    }
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const isAdmin = req.user?.role === "admin";
+    if (!isAdmin && order.userId?.toString() !== req.user?.userId) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    if (order.status === "cancelled") {
+      return res.status(400).json({ message: "Order already cancelled" });
+    }
+    if (order.paymentStatus === "paid") {
+      return res
+        .status(400)
+        .json({ message: "Paid order cannot be cancelled" });
+    }
+
+    if (Array.isArray(order.items) && order.items.length) {
+      for (const it of order.items) {
+        await Book.findByIdAndUpdate(it.bookId, {
+          $inc: { reserved: -Number(it.qty || 0) },
+        });
+      }
+    }
+
+    order.status = "cancelled";
+    if (order.paymentStatus !== "paid") {
+      order.paymentStatus = "failed";
+    }
+    await order.save();
+
+    return res.status(200).json({ message: "Order cancelled", order });
+  } catch (error) {
+    console.log("Error: " + error.message);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const updateOrderStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid order id" });
+    }
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const nextStatus = String(req.body?.status || "")
+      .trim()
+      .toLowerCase();
+    const nextPayment = String(req.body?.paymentStatus || "")
+      .trim()
+      .toLowerCase();
+
+    if (nextStatus && !["placed", "paid", "cancelled"].includes(nextStatus)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+    if (
+      nextPayment &&
+      !["unpaid", "pending", "paid", "failed"].includes(nextPayment)
+    ) {
+      return res.status(400).json({ message: "Invalid payment status" });
+    }
+
+    if (order.status === "cancelled") {
+      return res.status(400).json({ message: "Order already cancelled" });
+    }
+
+    if (nextStatus === "cancelled") {
+      if (order.paymentStatus === "paid") {
+        return res
+          .status(400)
+          .json({ message: "Paid order cannot be cancelled" });
+      }
+      if (Array.isArray(order.items) && order.items.length) {
+        for (const it of order.items) {
+          await Book.findByIdAndUpdate(it.bookId, {
+            $inc: { reserved: -Number(it.qty || 0) },
+          });
+        }
+      }
+      order.status = "cancelled";
+      order.paymentStatus = "failed";
+      await order.save();
+      return res.status(200).json({ message: "Order cancelled", order });
+    }
+
+    const markPaid = nextStatus === "paid" || nextPayment === "paid";
+    if (markPaid) {
+      if (order.paymentStatus === "paid") {
+        return res.status(400).json({ message: "Order already paid" });
+      }
+
+      const adjusted = [];
+      if (Array.isArray(order.items) && order.items.length) {
+        for (const it of order.items) {
+          const qty = Number(it.qty || 0);
+          if (!Number.isFinite(qty) || qty <= 0) continue;
+
+          const updated = await Book.findOneAndUpdate(
+            {
+              _id: it.bookId,
+              reserved: { $gte: qty },
+              stock: { $gte: qty },
+            },
+            { $inc: { reserved: -qty, stock: -qty } },
+            { new: true },
+          );
+
+          if (!updated) {
+            for (const done of adjusted) {
+              await Book.findByIdAndUpdate(done.bookId, {
+                $inc: { reserved: done.qty, stock: done.qty },
+              });
+            }
+            return res.status(400).json({
+              message: "Not enough stock to mark paid",
+            });
+          }
+          adjusted.push({ bookId: it.bookId, qty });
+        }
+      }
+
+      order.paymentStatus = "paid";
+      order.status = "paid";
+      await order.save();
+      return res.status(200).json({ message: "Order paid", order });
+    }
+
+    if (nextStatus) order.status = nextStatus;
+    if (nextPayment) order.paymentStatus = nextPayment;
+    await order.save();
+
+    return res.status(200).json({ message: "Order updated", order });
   } catch (error) {
     console.log("Error: " + error.message);
     return res.status(500).json({ message: "Internal server error" });

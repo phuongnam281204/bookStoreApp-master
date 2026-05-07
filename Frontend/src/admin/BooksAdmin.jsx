@@ -11,7 +11,6 @@ const emptyForm = {
   image: "",
   images: "",
   stock: "",
-  reserved: "",
   lowStockThreshold: "",
   title: "",
   supplier: "",
@@ -89,7 +88,6 @@ function BooksAdmin() {
         image: form.image,
         images: form.images,
         stock: form.stock,
-        reserved: form.reserved,
         lowStockThreshold: form.lowStockThreshold,
         title: form.title,
         supplier: form.supplier,
@@ -134,7 +132,6 @@ function BooksAdmin() {
       image: b.image || "",
       images: Array.isArray(b.images) ? b.images.join(", ") : "",
       stock: b.stock ?? "",
-      reserved: b.reserved ?? "",
       lowStockThreshold: b.lowStockThreshold ?? "",
       title: b.title || "",
       supplier: b.supplier || "",
@@ -257,16 +254,6 @@ function BooksAdmin() {
             value={form.stock}
             onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
             placeholder="Ton kho (stock)"
-            type="number"
-            min={0}
-            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-          />
-          <input
-            value={form.reserved}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, reserved: e.target.value }))
-            }
-            placeholder="Dang giu (reserved)"
             type="number"
             min={0}
             className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"

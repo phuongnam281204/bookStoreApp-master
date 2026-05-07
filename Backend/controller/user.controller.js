@@ -2,15 +2,16 @@ import User from "../model/user.model.js";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import nodemailer from "nodemailer";
 
 const SESSION_TTL_MINUTES_RAW = process.env.SESSION_TTL_MINUTES;
 const SESSION_TTL_MINUTES = Number(
-  SESSION_TTL_MINUTES_RAW === undefined ? 5 : SESSION_TTL_MINUTES_RAW,
+  SESSION_TTL_MINUTES_RAW === undefined ? 15 : SESSION_TTL_MINUTES_RAW,
 );
 const sessionTtlMinutes =
   Number.isFinite(SESSION_TTL_MINUTES) && SESSION_TTL_MINUTES > 0
     ? SESSION_TTL_MINUTES
-    : 5;
+    : 15;
 const sessionMaxAgeMs = sessionTtlMinutes * 60 * 1000;
 
 const RESET_TTL_MINUTES_RAW = process.env.RESET_TTL_MINUTES;
@@ -29,12 +30,68 @@ const cookieOptions = {
   maxAge: sessionMaxAgeMs,
 };
 
+const getResetBaseUrl = () => {
+  const explicit = String(process.env.RESET_PASSWORD_URL || "").trim();
+  if (explicit) return explicit;
+  const origin = String(
+    process.env.CORS_ORIGIN || "http://localhost:5173",
+  ).trim();
+  return `${origin.replace(/\/$/, "")}/reset-password`;
+};
+
+const getSmtpConfig = () => {
+  const host = String(process.env.SMTP_HOST || "").trim();
+  const port = Number(process.env.SMTP_PORT || 587);
+  const user = String(process.env.SMTP_USER || "").trim();
+  const pass = String(process.env.SMTP_PASS || "").trim();
+  const from = String(process.env.SMTP_FROM || user || "").trim();
+  const secureEnv = String(process.env.SMTP_SECURE || "").toLowerCase();
+  const secure = secureEnv ? secureEnv === "true" : port === 465;
+
+  if (!host || !user || !pass) return null;
+  return { host, port, user, pass, from, secure };
+};
+
+const sendResetEmail = async (toEmail, resetLink) => {
+  const smtp = getSmtpConfig();
+  if (!smtp) {
+    throw new Error("SMTP not configured");
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: smtp.host,
+    port: smtp.port,
+    secure: smtp.secure,
+    auth: { user: smtp.user, pass: smtp.pass },
+  });
+
+  const subject = "Reset your password";
+  const text = `You requested a password reset.\n\nReset link: ${resetLink}\n\nThis link expires in ${resetTtlMinutes} minutes.`;
+  const html = `
+    <p>You requested a password reset.</p>
+    <p><a href="${resetLink}">Reset your password</a></p>
+    <p>This link expires in ${resetTtlMinutes} minutes.</p>
+  `;
+
+  await transporter.sendMail({
+    from: smtp.from,
+    to: toEmail,
+    subject,
+    text,
+    html,
+  });
+};
+
 const issueToken = (res, user) => {
   const secret = process.env.JWT_SECRET;
   if (!secret) return false;
 
   const token = jwt.sign(
-    { userId: user._id.toString(), role: user.role },
+    {
+      userId: user._id.toString(),
+      role: user.role,
+      tokenVersion: user.tokenVersion || 0,
+    },
     secret,
     { expiresIn: `${sessionTtlMinutes}m` },
   );
@@ -235,6 +292,88 @@ export const logout = async (req, res) => {
   return res.status(200).json({ message: "Logged out" });
 };
 
+export const forgotPassword = async (req, res) => {
+  try {
+    const email = String(req.body?.email || "")
+      .trim()
+      .toLowerCase();
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await User.findOne({ email }).select("_id");
+    if (user) {
+      const resetBaseUrl = getResetBaseUrl();
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto
+        .createHash("sha256")
+        .update(rawToken)
+        .digest("hex");
+      const expiresAt = new Date(Date.now() + resetTtlMinutes * 60 * 1000);
+
+      await User.findByIdAndUpdate(user._id, {
+        $set: {
+          resetPasswordTokenHash: tokenHash,
+          resetPasswordExpiresAt: expiresAt,
+        },
+      });
+
+      const resetLink = `${resetBaseUrl}${resetBaseUrl.includes("?") ? "&" : "?"}token=${rawToken}`;
+      await sendResetEmail(email, resetLink);
+    }
+
+    return res
+      .status(200)
+      .json({ message: "If the email exists, a reset link was sent" });
+  } catch (error) {
+    console.log("Error: " + error.message);
+    if (error.message === "SMTP not configured") {
+      return res.status(500).json({ message: "Email service not configured" });
+    }
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const token = String(req.body?.token || "").trim();
+    const password = String(req.body?.password || "");
+
+    if (!token || !password) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+    if (password.length < 8) {
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 8 characters" });
+    }
+
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordTokenHash: tokenHash,
+      resetPasswordExpiresAt: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    const hashPassword = await bcryptjs.hash(password, 10);
+    user.password = hashPassword;
+    user.resetPasswordTokenHash = null;
+    user.resetPasswordExpiresAt = null;
+    user.tokenVersion = Number(user.tokenVersion || 0) + 1;
+    await user.save();
+
+    res.clearCookie("token", cookieOptions);
+    return res.status(200).json({ message: "Password reset successful" });
+  } catch (error) {
+    console.log("Error: " + error.message);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const me = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select(
@@ -300,82 +439,6 @@ export const deleteUser = async (req, res) => {
     );
     if (!deleted) return res.status(404).json({ message: "User not found" });
     return res.status(200).json({ message: "User deleted", user: deleted });
-  } catch (error) {
-    console.log("Error: " + error.message);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-export const forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
-    const normalizedEmail = String(email || "")
-      .trim()
-      .toLowerCase();
-
-    const user = normalizedEmail
-      ? await User.findOne({ email: normalizedEmail })
-      : null;
-
-    if (user) {
-      const resetToken = crypto.randomBytes(32).toString("hex");
-      const resetHash = crypto
-        .createHash("sha256")
-        .update(resetToken)
-        .digest("hex");
-
-      user.resetPasswordTokenHash = resetHash;
-      user.resetPasswordExpiresAt = new Date(
-        Date.now() + resetTtlMinutes * 60 * 1000,
-      );
-      await user.save();
-
-      const frontendOrigin = process.env.CORS_ORIGIN || "http://localhost:5173";
-      const resetLink = `${frontendOrigin.replace(/\/$/, "")}/reset-password?token=${resetToken}`;
-
-      return res.status(200).json({
-        message: "If the email exists, a reset link has been created",
-        ...(process.env.NODE_ENV === "production" ? {} : { resetLink }),
-      });
-    }
-
-    return res.status(200).json({
-      message: "If the email exists, a reset link has been created",
-    });
-  } catch (error) {
-    console.log("Error: " + error.message);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-export const resetPassword = async (req, res) => {
-  try {
-    const { token, password } = req.body;
-    if (!token || !password) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    const tokenHash = crypto
-      .createHash("sha256")
-      .update(String(token))
-      .digest("hex");
-
-    const user = await User.findOne({
-      resetPasswordTokenHash: tokenHash,
-      resetPasswordExpiresAt: { $gt: new Date() },
-    });
-
-    if (!user) {
-      return res.status(400).json({ message: "Invalid or expired token" });
-    }
-
-    const hashPassword = await bcryptjs.hash(String(password), 10);
-    user.password = hashPassword;
-    user.resetPasswordTokenHash = null;
-    user.resetPasswordExpiresAt = null;
-    await user.save();
-
-    return res.status(200).json({ message: "Password updated" });
   } catch (error) {
     console.log("Error: " + error.message);
     return res.status(500).json({ message: "Internal server error" });

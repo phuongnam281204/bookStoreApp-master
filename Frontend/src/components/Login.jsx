@@ -15,6 +15,7 @@ function Login({ defaultTab = "login", autoOpen = false }) {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
 
   const loginForm = useForm();
   const signupForm = useForm();
@@ -60,6 +61,39 @@ function Login({ defaultTab = "login", autoOpen = false }) {
         err?.response?.data?.message ||
         err?.message ||
         t("auth.toast.loginFailed");
+      toast.error(message);
+    }
+  };
+
+  const openForgotModal = () => {
+    const modal = document.getElementById("forgot_password_modal");
+    if (modal && typeof modal.showModal === "function") modal.showModal();
+  };
+
+  const submitForgot = async (e) => {
+    e.preventDefault();
+    const email = forgotEmail.trim();
+    if (!email) {
+      toast.error("Vui lòng nhập email");
+      return;
+    }
+
+    try {
+      const res = await axios.post(
+        "/user/forgot-password",
+        { email },
+        { withCredentials: true },
+      );
+      if (res?.data?.resetLink) {
+        toast.success("Link reset (dev): " + res.data.resetLink);
+      } else {
+        toast.success("Nếu email tồn tại, link khôi phục sẽ được gửi");
+      }
+      setForgotEmail("");
+      document.getElementById("forgot_password_modal")?.close();
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || err?.message || "Không thể gửi yêu cầu";
       toast.error(message);
     }
   };
@@ -231,6 +265,13 @@ function Login({ defaultTab = "login", autoOpen = false }) {
                 <button type="submit" className="btn btn-primary">
                   {t("nav.login")}
                 </button>
+                <button
+                  type="button"
+                  className="text-sm font-semibold text-slate-500 hover:text-slate-700"
+                  onClick={openForgotModal}
+                >
+                  Quên mật khẩu?
+                </button>
                 <p className="text-sm">
                   {t("auth.login.notRegistered")}{" "}
                   <button
@@ -373,6 +414,39 @@ function Login({ defaultTab = "login", autoOpen = false }) {
               </div>
             </form>
           )}
+        </div>
+      </dialog>
+
+      <dialog id="forgot_password_modal" className="modal">
+        <div className="modal-box">
+          <h3 className="text-lg font-semibold">Quên mật khẩu</h3>
+          <p className="mt-2 text-sm text-slate-600">
+            Nhập email để nhận link đặt lại mật khẩu.
+          </p>
+          <form className="mt-4 space-y-3" onSubmit={submitForgot}>
+            <input
+              type="email"
+              placeholder="Nhập email"
+              className="input input-bordered w-full"
+              value={forgotEmail}
+              onChange={(e) => setForgotEmail(e.target.value)}
+              required
+            />
+            <div className="flex gap-2">
+              <button type="submit" className="btn btn-primary">
+                Gửi link
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() =>
+                  document.getElementById("forgot_password_modal")?.close()
+                }
+              >
+                Hủy
+              </button>
+            </div>
+          </form>
         </div>
       </dialog>
     </div>
