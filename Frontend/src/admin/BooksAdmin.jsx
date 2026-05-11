@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import axios from "axios";
@@ -8,6 +8,8 @@ const emptyForm = {
   name: "",
   price: "",
   category: "",
+  genres: [],
+  ageGroup: "",
   image: "",
   images: "",
   stock: "",
@@ -23,6 +25,27 @@ const emptyForm = {
   pages: "",
 };
 
+const categoryOptions = [
+  "Truyện tranh Việt Nam",
+  "Truyện tranh Nhật Bản (Manga)",
+  "Truyện tranh nước ngoài",
+  "Comic",
+];
+
+const genreOptions = [
+  "Comedy",
+  "Adventure",
+  "Action",
+  "Romance",
+  "Horror",
+  "Mystery",
+  "Slice of Life",
+  "School Life",
+  "Fantasy",
+];
+
+const ageOptions = ["3+", "6+", "10+", "13+", "16+", "18+"];
+
 function BooksAdmin() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +54,7 @@ function BooksAdmin() {
   const [inventoryDrafts, setInventoryDrafts] = useState({});
   const [inventoryLogs, setInventoryLogs] = useState([]);
   const [selectedLogBookId, setSelectedLogBookId] = useState(null);
+  const genresDropdownRef = useRef(null);
 
   const load = async () => {
     setLoading(true);
@@ -85,6 +109,8 @@ function BooksAdmin() {
         name: form.name,
         price: form.price,
         category: form.category,
+        genres: form.genres,
+        ageGroup: form.ageGroup,
         image: form.image,
         images: form.images,
         stock: form.stock,
@@ -129,6 +155,8 @@ function BooksAdmin() {
       name: b.name || "",
       price: b.price ?? "",
       category: b.category || "",
+      genres: Array.isArray(b.genres) ? b.genres : [],
+      ageGroup: b.ageGroup || "",
       image: b.image || "",
       images: Array.isArray(b.images) ? b.images.join(", ") : "",
       stock: b.stock ?? "",
@@ -235,14 +263,69 @@ function BooksAdmin() {
             className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
             required
           />
-          <input
+          <select
             value={form.category}
             onChange={(e) =>
               setForm((f) => ({ ...f, category: e.target.value }))
             }
-            placeholder="Category (Free/Paid)"
             className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-          />
+            required
+          >
+            <option value="">Chọn nhóm sản phẩm</option>
+            {categoryOptions.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+          <details className="relative" ref={genresDropdownRef}>
+            <summary className="cursor-pointer list-none rounded-md border px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+              {form.genres.length
+                ? `Genres: ${form.genres.join(", ")}`
+                : "Chọn thể loại"}
+            </summary>
+            <div className="absolute z-10 mt-2 max-h-56 w-full overflow-auto rounded-md border bg-white p-3 shadow-md dark:border-slate-700 dark:bg-slate-900">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {genreOptions.map((opt) => (
+                  <label key={opt} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500"
+                      checked={form.genres.includes(opt)}
+                      onChange={() =>
+                        setForm((f) => ({
+                          ...f,
+                          genres: f.genres.includes(opt)
+                            ? f.genres.filter((g) => g !== opt)
+                            : [...f.genres, opt],
+                        }))
+                      }
+                      onClick={() => {
+                        if (genresDropdownRef.current) {
+                          genresDropdownRef.current.open = false;
+                        }
+                      }}
+                    />
+                    <span>{opt}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </details>
+          <select
+            value={form.ageGroup}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, ageGroup: e.target.value }))
+            }
+            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
+          >
+            <option value="">Chọn độ tuổi</option>
+            {ageOptions.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
           <input
             value={form.image}
             onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}

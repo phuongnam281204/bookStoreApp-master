@@ -51,6 +51,8 @@ export const createBook = async (req, res) => {
       reserved,
       lowStockThreshold,
       category,
+      genres,
+      ageGroup,
       image,
       images,
       title,
@@ -120,6 +122,13 @@ export const createBook = async (req, res) => {
           ? 5
           : Number(lowStockThreshold),
       category: String(category || "").trim(),
+      genres: Array.isArray(genres)
+        ? genres.map((g) => String(g || "").trim()).filter(Boolean)
+        : String(genres || "")
+            .split(",")
+            .map((g) => g.trim())
+            .filter(Boolean),
+      ageGroup: String(ageGroup || "").trim(),
       image: bodyImage,
       images: bodyImages,
       title: String(title || "").trim(),
@@ -192,6 +201,8 @@ export const updateBook = async (req, res) => {
       "reserved",
       "lowStockThreshold",
       "category",
+      "genres",
+      "ageGroup",
       "image",
       "images",
       "title",
@@ -239,6 +250,17 @@ export const updateBook = async (req, res) => {
           return res.status(400).json({ message: "Invalid gallery image URL" });
         }
         updates.images = parsedImages;
+        continue;
+      }
+
+      if (key === "genres") {
+        const parsedGenres = Array.isArray(req.body[key])
+          ? req.body[key]
+          : String(req.body[key] || "")
+              .split(",")
+              .map((g) => g.trim())
+              .filter(Boolean);
+        updates.genres = parsedGenres.map((g) => String(g || "").trim());
         continue;
       }
 

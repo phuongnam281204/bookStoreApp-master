@@ -8,6 +8,8 @@ const bookSchema = mongoose.Schema({
   reserved: { type: Number, default: 0, min: 0 },
   lowStockThreshold: { type: Number, default: 5, min: 0 },
   category: String,
+  genres: [String],
+  ageGroup: String,
   image: String,
   images: [String],
   title: String,
