@@ -15,6 +15,12 @@ function BookDetail() {
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [myReview, setMyReview] = useState(null);
+  const [ratingInput, setRatingInput] = useState(0);
+  const [commentInput, setCommentInput] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -33,6 +39,51 @@ function BookDetail() {
 
     load();
   }, [id]);
+
+  const loadReviews = async () => {
+    if (!id) return;
+    setReviewsLoading(true);
+    try {
+      const res = await axios.get(`/book/${id}/reviews`);
+      setReviews(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || err?.message || "Không tải được";
+      toast.error(message);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const loadMyReview = async () => {
+    if (!id || !authUser?._id) return;
+    try {
+      const res = await axios.get(`/book/${id}/reviews/me`, {
+        withCredentials: true,
+      });
+      setMyReview(res.data || null);
+      setRatingInput(Number(res.data?.rating || 0));
+      setCommentInput(String(res.data?.comment || ""));
+    } catch {
+      setMyReview(null);
+      setRatingInput(0);
+      setCommentInput("");
+    }
+  };
+
+  useEffect(() => {
+    loadReviews();
+  }, [id]);
+
+  useEffect(() => {
+    if (!authUser?._id) {
+      setMyReview(null);
+      setRatingInput(0);
+      setCommentInput("");
+      return;
+    }
+    loadMyReview();
+  }, [id, authUser?._id]);
 
   const requireLogin = () => {
     toast.error("Vui lòng đăng nhập để mua hàng");
@@ -63,14 +114,6 @@ function BookDetail() {
     setActiveIndex(0);
   }, [book?._id]);
 
-  useEffect(() => {
-    if (images.length <= 1) return undefined;
-    const intervalId = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % images.length);
-    }, 2500);
-    return () => clearInterval(intervalId);
-  }, [images.length]);
-
   const topMetaRows = [
     { label: "Nhà cung cấp", value: book?.supplier },
     { label: "Nhà xuất bản", value: book?.publisher },
@@ -90,6 +133,47 @@ function BookDetail() {
     { label: "Kích Thước Bao Bì", value: book?.packageSize },
     { label: "Số trang", value: book?.pages },
   ];
+
+  const ratingValue = Math.max(0, Math.min(5, Number(book?.rating || 0)));
+  const ratingCount = Math.max(0, Number(book?.ratingCount || 0));
+
+  const submitReview = async () => {
+    if (!authUser) return requireLogin();
+    if (ratingInput < 1 || ratingInput > 5) {
+      toast.error("Vui lòng chọn số sao");
+      return;
+    }
+
+    setReviewSubmitting(true);
+    try {
+      const res = await axios.post(
+        `/book/${id}/reviews`,
+        {
+          rating: ratingInput,
+          comment: commentInput.trim(),
+        },
+        { withCredentials: true },
+      );
+      setMyReview(res.data?.review || null);
+      setBook((prev) =>
+        prev
+          ? {
+              ...prev,
+              rating: res.data?.rating ?? prev.rating,
+              ratingCount: res.data?.ratingCount ?? prev.ratingCount,
+            }
+          : prev,
+      );
+      await loadReviews();
+      toast.success("Đã lưu đánh giá");
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || err?.message || "Gửi đánh giá thất bại";
+      toast.error(message);
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
   return (
     <>
@@ -188,6 +272,30 @@ function BookDetail() {
                         : ""}
                     </span>
                   </div>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: 5 }).map((_, index) => {
+                        const filled = index + 1 <= Math.round(ratingValue);
+                        return (
+                          <svg
+                            key={index}
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            className={`h-4 w-4 ${filled ? "text-amber-400" : "text-slate-200 dark:text-slate-700"}`}
+                            aria-hidden="true"
+                          >
+                            <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                          </svg>
+                        );
+                      })}
+                    </div>
+                    <span className="font-medium text-slate-700 dark:text-slate-100">
+                      {ratingValue ? ratingValue.toFixed(1) : "0.0"}
+                    </span>
+                    <span>({ratingCount} đánh giá)</span>
+                  </div>
                 </div>
 
                 <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-700 rounded-2xl shadow p-6">
@@ -212,6 +320,127 @@ function BookDetail() {
                   <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
                     {book.title || "Chưa có mô tả."}
                   </p>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-700 rounded-2xl shadow p-6">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-lg font-semibold">Đánh giá sản phẩm</h2>
+                    {myReview ? (
+                      <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-600">
+                        Bạn đã đánh giá
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-4 grid gap-3">
+                    <div>
+                      <div className="text-sm font-medium text-slate-600">
+                        Chọn số sao
+                      </div>
+                      <div className="mt-2 flex items-center gap-1">
+                        {Array.from({ length: 5 }).map((_, index) => {
+                          const active = index + 1 <= ratingInput;
+                          return (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => setRatingInput(index + 1)}
+                              className="transition"
+                              aria-label={`Chọn ${index + 1} sao`}
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                                className={`h-6 w-6 ${active ? "text-amber-400" : "text-slate-200 dark:text-slate-700"}`}
+                              >
+                                <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                              </svg>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-slate-600">
+                        Nhận xét (tuỳ chọn)
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={commentInput}
+                        onChange={(e) => setCommentInput(e.target.value)}
+                        placeholder="Chia sẻ trải nghiệm đọc sách..."
+                        className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none dark:border-slate-700 dark:bg-slate-900"
+                      />
+                    </div>
+
+                    <div>
+                      <button
+                        type="button"
+                        onClick={submitReview}
+                        disabled={reviewSubmitting}
+                        className="btn bg-rose-500 text-white hover:bg-rose-600 disabled:opacity-60"
+                      >
+                        {reviewSubmitting ? "Đang gửi..." : "Gửi đánh giá"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    {reviewsLoading ? (
+                      <p>Đang tải đánh giá...</p>
+                    ) : !reviews.length ? (
+                      <p className="text-sm text-slate-500">
+                        Chưa có đánh giá nào.
+                      </p>
+                    ) : (
+                      <div className="space-y-4">
+                        {reviews.map((review) => (
+                          <div
+                            key={review._id}
+                            className="rounded-xl border border-slate-100 p-4 dark:border-slate-700"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="text-sm font-semibold">
+                                {review.userId?.fullname || "Người dùng"}
+                              </div>
+                              <div className="text-xs text-slate-400">
+                                {review.createdAt
+                                  ? new Date(review.createdAt).toLocaleString(
+                                      "vi-VN",
+                                    )
+                                  : ""}
+                              </div>
+                            </div>
+                            <div className="mt-2 flex items-center gap-1">
+                              {Array.from({ length: 5 }).map((_, index) => {
+                                const filled =
+                                  index + 1 <= Math.round(review.rating || 0);
+                                return (
+                                  <svg
+                                    key={index}
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                    className={`h-4 w-4 ${filled ? "text-amber-400" : "text-slate-200 dark:text-slate-700"}`}
+                                    aria-hidden="true"
+                                  >
+                                    <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                                  </svg>
+                                );
+                              })}
+                            </div>
+                            {review.comment ? (
+                              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                                {review.comment}
+                              </p>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

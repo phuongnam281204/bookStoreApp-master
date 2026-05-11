@@ -4,9 +4,12 @@ import {
   deleteBook,
   getBookById,
   getBooks,
+  getBookReviews,
   getInventoryLogs,
+  getMyBookReview,
   updateBook,
   updateInventory,
+  upsertBookReview,
 } from "../controller/book.controller.js";
 import { requireAdmin, requireAuth } from "../middleware/auth.middleware.js";
 
@@ -14,6 +17,9 @@ const router = express.Router();
 
 router.get("/", getBooks);
 router.get("/:id/inventory-logs", requireAuth, requireAdmin, getInventoryLogs);
+router.get("/:id/reviews", getBookReviews);
+router.get("/:id/reviews/me", requireAuth, getMyBookReview);
+router.post("/:id/reviews", requireAuth, upsertBookReview);
 router.get("/:id", getBookById);
 router.post("/", requireAuth, requireAdmin, createBook);
 router.put("/:id", requireAuth, requireAdmin, updateBook);

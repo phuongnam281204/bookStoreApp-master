@@ -21,6 +21,9 @@ const bookSchema = mongoose.Schema({
   weightGr: Number,
   packageSize: String,
   pages: Number,
+  rating: { type: Number, default: 0, min: 0, max: 5 },
+  ratingCount: { type: Number, default: 0, min: 0 },
+  ratingSum: { type: Number, default: 0, min: 0 },
 });
 const Book = mongoose.model("Book", bookSchema);
 

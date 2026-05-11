@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import Book from "../model/book.model.js";
 import InventoryLog from "../model/inventoryLog.model.js";
+import Order from "../model/order.model.js";
+import Review from "../model/review.model.js";
 
 const isValidUrl = (value) => {
   if (!value) return false;
@@ -10,6 +12,13 @@ const isValidUrl = (value) => {
   } catch (error) {
     return false;
   }
+};
+
+const normalizeRating = (value) => {
+  const rating = Number(value);
+  if (!Number.isFinite(rating)) return null;
+  if (rating < 1 || rating > 5) return null;
+  return rating;
 };
 
 export const getBooks = async (req, res) => {
@@ -371,6 +380,126 @@ export const getInventoryLogs = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(Number.isFinite(limit) ? limit : 30);
     return res.status(200).json(logs);
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getBookReviews = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+
+    const limit = Number(req.query.limit || 20);
+    const reviews = await Review.find({ bookId: id })
+      .sort({ createdAt: -1 })
+      .limit(Number.isFinite(limit) ? limit : 20)
+      .populate("userId", "fullname");
+
+    return res.status(200).json(reviews);
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getMyBookReview = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+
+    const review = await Review.findOne({
+      bookId: id,
+      userId: req.user?.userId,
+    }).populate("userId", "fullname");
+
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
+    }
+
+    return res.status(200).json(review);
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const upsertBookReview = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+
+    const rating = normalizeRating(req.body?.rating);
+    if (!rating) {
+      return res.status(400).json({ message: "Invalid rating" });
+    }
+
+    const comment = String(req.body?.comment || "").trim();
+
+    const book = await Book.findById(id).select("_id");
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+
+    if (req.user?.role !== "admin") {
+      const hasPurchased = await Order.findOne({
+        userId: req.user?.userId,
+        "items.bookId": id,
+        status: { $ne: "cancelled" },
+      }).select("_id");
+
+      if (!hasPurchased) {
+        return res
+          .status(403)
+          .json({ message: "Bạn cần mua sách trước khi đánh giá" });
+      }
+    }
+
+    let review = await Review.findOne({
+      bookId: id,
+      userId: req.user?.userId,
+    });
+
+    if (review) {
+      const delta = rating - Number(review.rating || 0);
+      review.rating = rating;
+      review.comment = comment;
+      await review.save();
+
+      if (delta !== 0) {
+        await Book.findByIdAndUpdate(id, { $inc: { ratingSum: delta } });
+      }
+    } else {
+      review = await Review.create({
+        bookId: id,
+        userId: req.user?.userId,
+        rating,
+        comment,
+      });
+      await Book.findByIdAndUpdate(id, {
+        $inc: { ratingSum: rating, ratingCount: 1 },
+      });
+    }
+
+    const updated = await Book.findById(id).select("ratingSum ratingCount");
+    const avg = updated?.ratingCount
+      ? Number((updated.ratingSum / updated.ratingCount).toFixed(2))
+      : 0;
+    await Book.findByIdAndUpdate(id, { rating: avg });
+
+    return res.status(200).json({
+      message: "Review saved",
+      review,
+      rating: avg,
+      ratingCount: updated?.ratingCount || 0,
+    });
   } catch (error) {
     console.log("Error: ", error);
     return res.status(500).json({ message: "Internal server error" });
