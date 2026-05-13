@@ -23,6 +23,8 @@ function Checkout() {
   const [addressLine, setAddressLine] = useState("");
   const [note, setNote] = useState("");
   const [voucherCode, setVoucherCode] = useState("");
+  const [voucherInfo, setVoucherInfo] = useState(null);
+  const [voucherError, setVoucherError] = useState("");
   const [invoiceRequested, setInvoiceRequested] = useState(false);
   const [cities, setCities] = useState([]);
   const [districts, setDistricts] = useState([]);
@@ -116,6 +118,57 @@ function Checkout() {
     };
   }, [districtCode]);
 
+  useEffect(() => {
+    if (!voucherInfo) return;
+    const current = voucherCode.trim().toUpperCase();
+    if (!current || current !== String(voucherInfo.code || "").toUpperCase()) {
+      setVoucherInfo(null);
+      setVoucherError("");
+    }
+  }, [voucherCode, voucherInfo]);
+
+  const applyVoucher = async () => {
+    const code = voucherCode.trim().toUpperCase();
+    if (!code) {
+      setVoucherError("Vui lòng nhập mã khuyến mãi");
+      return;
+    }
+    if (!authUser?._id) {
+      setVoucherError("Vui lòng đăng nhập để áp dụng mã");
+      return;
+    }
+
+    try {
+      const res = await axios.post(
+        "/voucher/validate",
+        { code },
+        { withCredentials: true },
+      );
+      const voucher = res?.data?.voucher;
+      if (voucher?.code) {
+        setVoucherInfo(voucher);
+        setVoucherCode(voucher.code);
+        setVoucherError("");
+        toast.success("Áp dụng mã thành công");
+      } else {
+        setVoucherInfo(null);
+        setVoucherError("Mã không hợp lệ");
+      }
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || err?.message || "Không thể áp dụng mã";
+      setVoucherInfo(null);
+      setVoucherError(message);
+      toast.error(message);
+    }
+  };
+
+  const clearVoucher = () => {
+    setVoucherInfo(null);
+    setVoucherCode("");
+    setVoucherError("");
+  };
+
   const placeOrder = async () => {
     if (!items.length) {
       toast.error("Giỏ hàng trống");
@@ -139,7 +192,7 @@ function Checkout() {
           qty: x.qty,
         })),
         paymentMethod: payment.toUpperCase(),
-        voucherCode: voucherCode.trim(),
+        voucherCode: String(voucherInfo?.code || voucherCode).trim(),
         invoiceRequested,
         shippingAddress: {
           fullName: fullName.trim(),
@@ -156,9 +209,16 @@ function Checkout() {
       const res = await axios.post("/order", payload, {
         withCredentials: true,
       });
+      const paymentUrl = res?.data?.paymentUrl;
+      if (payment === "vnpay" && paymentUrl) {
+        window.location.href = paymentUrl;
+        return;
+      }
+
       if (res.data) {
         toast.success("Đặt hàng thành công");
         clear();
+        clearVoucher();
       }
     } catch (err) {
       const message =
@@ -166,6 +226,10 @@ function Checkout() {
       toast.error(message);
     }
   };
+
+  const discountPercent = Number(voucherInfo?.discountPercent || 0);
+  const discountAmount = Math.round(totals.total * (discountPercent / 100));
+  const finalTotal = Math.max(totals.total - discountAmount, 0);
 
   return (
     <>
@@ -320,6 +384,16 @@ function Checkout() {
                       type="radio"
                       name="payment"
                       className="h-4 w-4 accent-red-600"
+                      checked={payment === "vnpay"}
+                      onChange={() => setPayment("vnpay")}
+                    />
+                    <span>VNPAY</span>
+                  </label>
+                  <label className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="payment"
+                      className="h-4 w-4 accent-red-600"
                       checked={payment === "cod"}
                       onChange={() => setPayment("cod")}
                     />
@@ -340,13 +414,40 @@ function Checkout() {
                     value={voucherCode}
                     onChange={(e) => setVoucherCode(e.target.value)}
                   />
-                  <button className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white">
+                  <button
+                    type="button"
+                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white"
+                    onClick={applyVoucher}
+                  >
                     Áp dụng
                   </button>
-                  <button className="text-sm text-blue-600">
-                    Chọn khuyến mãi
-                  </button>
+                  {voucherInfo ? (
+                    <button
+                      type="button"
+                      className="text-sm text-rose-600"
+                      onClick={clearVoucher}
+                    >
+                      Bỏ mã
+                    </button>
+                  ) : (
+                    <button type="button" className="text-sm text-blue-600">
+                      Chọn khuyến mãi
+                    </button>
+                  )}
                 </div>
+                {voucherInfo ? (
+                  <div className="mt-2 text-xs text-emerald-600">
+                    Đã áp dụng: {voucherInfo.code} (-{discountPercent}%)
+                    {voucherInfo.expiresAt
+                      ? `, hết hạn ${new Date(voucherInfo.expiresAt).toLocaleDateString("vi-VN")}`
+                      : ""}
+                  </div>
+                ) : null}
+                {voucherError ? (
+                  <div className="mt-2 text-xs text-rose-600">
+                    {voucherError}
+                  </div>
+                ) : null}
                 <button className="mt-3 text-xs text-slate-500">
                   Hướng dẫn sử dụng Gift Card
                 </button>
@@ -417,6 +518,12 @@ function Checkout() {
                     {formatVnd(totals.total)}
                   </span>
                 </div>
+                <div className="mt-2 flex items-center justify-between text-sm">
+                  <span className="text-slate-500">Giảm giá</span>
+                  <span className="font-semibold text-emerald-600">
+                    -{formatVnd(discountAmount)}
+                  </span>
+                </div>
                 <div className="mt-3 flex items-center justify-between text-sm">
                   <span className="text-slate-500">Phí vận chuyển</span>
                   <span className="font-semibold">0đ</span>
@@ -426,7 +533,7 @@ function Checkout() {
                     Tổng số tiền (gồm VAT)
                   </span>
                   <span className="text-2xl font-bold text-red-600">
-                    {formatVnd(totals.total)}
+                    {formatVnd(finalTotal)}
                   </span>
                 </div>
                 <button

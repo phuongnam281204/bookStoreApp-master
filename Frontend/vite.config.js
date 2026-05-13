@@ -9,6 +9,7 @@ export default defineConfig({
       "/book": "http://localhost:4001",
       "/user": "http://localhost:4001",
       "/order": "http://localhost:4001",
+      "/voucher": "http://localhost:4001",
       "/health": "http://localhost:4001",
       "/uploads": "http://localhost:4001",
     },
