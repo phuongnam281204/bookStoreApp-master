@@ -3,6 +3,7 @@ import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import { OAuth2Client } from "google-auth-library";
 
 const SESSION_TTL_MINUTES_RAW = process.env.SESSION_TTL_MINUTES;
 const SESSION_TTL_MINUTES = Number(
@@ -28,6 +29,11 @@ const cookieOptions = {
   sameSite: "lax",
   secure: process.env.NODE_ENV === "production",
   maxAge: sessionMaxAgeMs,
+};
+
+const getGoogleClientId = () => {
+  const clientId = String(process.env.GOOGLE_CLIENT_ID || "").trim();
+  return clientId || null;
 };
 
 const getResetBaseUrl = () => {
@@ -266,6 +272,98 @@ export const login = async (req, res) => {
     const isMatch = await bcryptjs.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid username or password" });
+    }
+
+    if (!issueToken(res, user)) {
+      return res.status(500).json({ message: "Server misconfigured" });
+    }
+
+    return res.status(200).json({
+      message: "Login successful",
+      user: {
+        _id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.log("Error: " + error.message);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const loginWithGoogle = async (req, res) => {
+  try {
+    const credential = String(req.body?.credential || "").trim();
+    if (!credential) {
+      return res.status(400).json({ message: "Missing credential" });
+    }
+
+    const clientId = getGoogleClientId();
+    if (!clientId) {
+      return res.status(500).json({ message: "Server misconfigured" });
+    }
+
+    const client = new OAuth2Client(clientId);
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: clientId,
+    });
+    const payload = ticket.getPayload();
+
+    const emailRaw = payload?.email || "";
+    const emailVerified = payload?.email_verified;
+    const googleId = payload?.sub || null;
+    const fullName = payload?.name || "";
+    const avatarUrl = payload?.picture || null;
+
+    if (!emailRaw || !googleId) {
+      return res.status(400).json({ message: "Invalid Google token" });
+    }
+    if (emailVerified === false) {
+      return res.status(400).json({ message: "Email not verified" });
+    }
+
+    const email = String(emailRaw).trim().toLowerCase();
+    const adminEmail = process.env.ADMIN_EMAIL
+      ? String(process.env.ADMIN_EMAIL).trim().toLowerCase()
+      : null;
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      const voucher = await createVoucherForNewUser();
+      const randomPassword = crypto.randomBytes(24).toString("hex");
+      const hashPassword = await bcryptjs.hash(randomPassword, 10);
+
+      user = await User.create({
+        fullname: fullName ? String(fullName).trim() : email.split("@")[0],
+        email,
+        password: hashPassword,
+        role: adminEmail && email === adminEmail ? "admin" : "user",
+        authProvider: "google",
+        googleId,
+        avatarUrl,
+        voucher,
+      });
+    } else if (user.googleId && user.googleId !== googleId) {
+      return res.status(400).json({ message: "Google account mismatch" });
+    } else {
+      let shouldSave = false;
+      if (!user.googleId) {
+        user.googleId = googleId;
+        user.authProvider = "google";
+        shouldSave = true;
+      }
+      if (!user.avatarUrl && avatarUrl) {
+        user.avatarUrl = avatarUrl;
+        shouldSave = true;
+      }
+      if (fullName && user.fullname !== fullName) {
+        user.fullname = String(fullName).trim();
+        shouldSave = true;
+      }
+      if (shouldSave) await user.save();
     }
 
     if (!issueToken(res, user)) {

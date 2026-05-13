@@ -77,6 +77,9 @@ const messages = {
     "auth.login.passwordPlaceholder": "Nhập mật khẩu",
     "auth.login.notRegistered": "Chưa có tài khoản?",
     "auth.login.signup": "Đăng ký",
+    "auth.login.or": "Hoặc",
+    "auth.login.google": "Tiếp tục với Google",
+    "auth.login.googleNotConfigured": "Chưa cấu hình đăng nhập Google",
   },
   en: {
     "lang.name": "English",
@@ -150,6 +153,9 @@ const messages = {
     "auth.login.passwordPlaceholder": "Enter your password",
     "auth.login.notRegistered": "Not registered?",
     "auth.login.signup": "Signup",
+    "auth.login.or": "Or",
+    "auth.login.google": "Continue with Google",
+    "auth.login.googleNotConfigured": "Google login is not configured",
   },
 };
 

@@ -24,6 +24,19 @@ const userSchema = mongoose.Schema({
     type: String,
     required: true,
   },
+  authProvider: {
+    type: String,
+    enum: ["local", "google"],
+    default: "local",
+  },
+  googleId: {
+    type: String,
+    default: null,
+  },
+  avatarUrl: {
+    type: String,
+    default: null,
+  },
   role: {
     type: String,
     enum: ["user", "admin"],
@@ -51,6 +64,7 @@ const userSchema = mongoose.Schema({
 });
 
 userSchema.index({ "voucher.code": 1 }, { unique: true, sparse: true });
+userSchema.index({ googleId: 1 }, { unique: true, sparse: true });
 
 const User = mongoose.model("User", userSchema);
 export default User;

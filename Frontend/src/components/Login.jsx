@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -16,6 +16,8 @@ function Login({ defaultTab = "login", autoOpen = false }) {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
+  const [googleReady, setGoogleReady] = useState(false);
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
   const loginForm = useForm();
   const signupForm = useForm();
@@ -38,6 +40,81 @@ function Login({ defaultTab = "login", autoOpen = false }) {
     if (!autoOpen) return;
     openModal(defaultTab);
   }, [autoOpen, defaultTab]);
+
+  useEffect(() => {
+    if (!googleClientId) return;
+    if (document.getElementById("google-oauth")) {
+      setGoogleReady(true);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = "google-oauth";
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setGoogleReady(true);
+    script.onerror = () =>
+      toast.error(t("auth.toast.loginFailed") || "Google load failed");
+    document.body.appendChild(script);
+  }, [googleClientId, t]);
+
+  const handleGoogleCredential = useCallback(
+    async (response) => {
+      const credential = response?.credential;
+      if (!credential) {
+        toast.error(t("auth.toast.loginFailed"));
+        return;
+      }
+
+      try {
+        const res = await axios.post(
+          "/user/login/google",
+          { credential },
+          { withCredentials: true },
+        );
+        const user = res?.data?.user;
+        if (user) {
+          localStorage.setItem("Users", JSON.stringify(user));
+          setAuthUser(user);
+        }
+        toast.success(t("auth.toast.loginSuccess"));
+        document.getElementById("my_modal_3").close();
+      } catch (err) {
+        const message =
+          err?.response?.data?.message ||
+          err?.message ||
+          t("auth.toast.loginFailed");
+        toast.error(message);
+      }
+    },
+    [setAuthUser, t],
+  );
+
+  useEffect(() => {
+    if (!googleReady || !googleClientId || activeTab !== "login") return;
+    const container = document.getElementById("google_signin_button");
+    if (!container) return;
+    const google = window.google;
+    if (!google || !google.accounts?.id) return;
+
+    container.innerHTML = "";
+    google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: handleGoogleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+    });
+    google.accounts.id.renderButton(container, {
+      theme: "outline",
+      size: "large",
+      text: "continue_with",
+      shape: "pill",
+      width: 320,
+    });
+
+    return () => google.accounts.id.cancel();
+  }, [googleReady, googleClientId, activeTab, handleGoogleCredential]);
 
   const submitLogin = async (data) => {
     const userInfo = {
@@ -258,6 +335,28 @@ function Login({ defaultTab = "login", autoOpen = false }) {
                   <span className="text-sm text-red-500">
                     {t("auth.fieldRequired")}
                   </span>
+                )}
+              </div>
+
+              <div className="mt-5">
+                <div className="divider text-xs uppercase text-slate-400">
+                  {t("auth.login.or")}
+                </div>
+                {googleClientId ? (
+                  <div
+                    id="google_signin_button"
+                    className="flex justify-center"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-outline w-full"
+                    onClick={() =>
+                      toast.error(t("auth.login.googleNotConfigured"))
+                    }
+                  >
+                    {t("auth.login.google")}
+                  </button>
                 )}
               </div>
 

@@ -5,6 +5,7 @@ import {
   getMyVoucher,
   listUsers,
   login,
+  loginWithGoogle,
   logout,
   me,
   resetPassword,
@@ -18,6 +19,7 @@ const router = express.Router();
 
 router.post("/signup", signup);
 router.post("/login", login);
+router.post("/login/google", loginWithGoogle);
 router.post("/logout", logout);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
