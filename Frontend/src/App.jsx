@@ -8,11 +8,13 @@ import Cart from "./cart/Cart";
 import BooksAdmin from "./admin/BooksAdmin";
 import OrdersAdmin from "./admin/OrdersAdmin";
 import UsersAdmin from "./admin/UsersAdmin";
+import VouchersAdmin from "./admin/VouchersAdmin";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import BookDetail from "./pages/BookDetail";
 import Checkout from "./pages/Checkout";
 import MyOrders from "./pages/MyOrders";
+import PaymentResult from "./pages/PaymentResult";
 import ResetPassword from "./pages/ResetPassword";
 
 function App() {
@@ -31,6 +33,12 @@ function App() {
             <Route
               path="/orders"
               element={!authUser ? <Navigate to="/signup" /> : <MyOrders />}
+            />
+            <Route
+              path="/payment-result"
+              element={
+                !authUser ? <Navigate to="/signup" /> : <PaymentResult />
+              }
             />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route
@@ -64,6 +72,18 @@ function App() {
                   <Navigate to="/signup" />
                 ) : authUser.role === "admin" ? (
                   <OrdersAdmin />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
+            />
+            <Route
+              path="/admin/vouchers"
+              element={
+                !authUser ? (
+                  <Navigate to="/signup" />
+                ) : authUser.role === "admin" ? (
+                  <VouchersAdmin />
                 ) : (
                   <Navigate to="/" />
                 )

@@ -290,6 +290,11 @@ function Navbar() {
                           Quản lý user
                         </Link>
                       </li>
+                      <li>
+                        <Link to="/admin/vouchers" className="rounded-xl">
+                          Quản lý voucher
+                        </Link>
+                      </li>
                     </ul>
                   </div>
                 ) : (
