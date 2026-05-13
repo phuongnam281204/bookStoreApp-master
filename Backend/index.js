@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import bookRoute from "./route/book.route.js";
 import userRoute from "./route/user.route.js";
 import orderRoute from "./route/order.route.js";
+import voucherRoute from "./route/voucher.route.js";
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ app.get("/health", (req, res) => {
 app.use("/book", bookRoute);
 app.use("/user", userRoute);
 app.use("/order", orderRoute);
+app.use("/voucher", voucherRoute);
 
 app.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
