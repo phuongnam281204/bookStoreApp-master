@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import axios from "axios";
@@ -25,12 +25,6 @@ const emptyForm = {
   pages: "",
 };
 
-const categoryOptions = [
-  "Truyện tranh Việt Nam",
-  "Truyện tranh Nhật Bản (Manga)",
-  "Truyện tranh nước ngoài",
-  "Comic",
-];
 
 const genreOptions = [
   "Comedy",
@@ -54,7 +48,13 @@ function BooksAdmin() {
   const [inventoryDrafts, setInventoryDrafts] = useState({});
   const [inventoryLogs, setInventoryLogs] = useState([]);
   const [selectedLogBookId, setSelectedLogBookId] = useState(null);
+  const [showCustomCategory, setShowCustomCategory] = useState(false);
   const genresDropdownRef = useRef(null);
+
+  const dynamicCategories = useMemo(() => {
+    const list = books.map((b) => String(b?.category || "").trim()).filter(Boolean);
+    return Array.from(new Set(list));
+  }, [books]);
 
   const load = async () => {
     setLoading(true);
@@ -263,21 +263,56 @@ function BooksAdmin() {
             className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
             required
           />
-          <select
-            value={form.category}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, category: e.target.value }))
-            }
-            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-            required
-          >
-            <option value="">Chọn nhóm sản phẩm</option>
-            {categoryOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
+          <div className="flex gap-2">
+            {!showCustomCategory ? (
+              <>
+                <select
+                  value={form.category}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, category: e.target.value }))
+                  }
+                  className="flex-1 px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
+                  required={!showCustomCategory}
+                >
+                  <option value="">Chọn nhóm sản phẩm</option>
+                  {dynamicCategories.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="px-3 py-2 border border-rose-500 text-rose-500 rounded-md text-sm whitespace-nowrap"
+                  onClick={() => setShowCustomCategory(true)}
+                >
+                  + Thêm mới
+                </button>
+              </>
+            ) : (
+              <>
+                <input
+                  value={form.category}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, category: e.target.value }))
+                  }
+                  placeholder="Nhập tên nhóm sản phẩm mới"
+                  className="flex-1 px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
+                  required={showCustomCategory}
+                />
+                <button
+                  type="button"
+                  className="px-3 py-2 border border-slate-500 text-slate-500 rounded-md text-sm whitespace-nowrap"
+                  onClick={() => {
+                    setShowCustomCategory(false);
+                    setForm((f) => ({ ...f, category: "" }));
+                  }}
+                >
+                  Huỷ
+                </button>
+              </>
+            )}
+          </div>
           <details className="relative" ref={genresDropdownRef}>
             <summary className="cursor-pointer list-none rounded-md border px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
               {form.genres.length
@@ -358,10 +393,11 @@ function BooksAdmin() {
             rows={2}
             className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700 md:col-span-2"
           />
-          <input
+          <textarea
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            placeholder="Title"
+            placeholder="Title (Mô tả sản phẩm)"
+            rows={4}
             className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700 md:col-span-2"
           />
           <input

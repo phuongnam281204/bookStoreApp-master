@@ -11,7 +11,7 @@ const messages = {
     "theme.toggle": "Chuyển chế độ sáng/tối",
 
     "nav.home": "Trang chủ",
-    "nav.course": "Sách",
+    "nav.course": "Danh mục sản phẩm",
     "nav.cart": "Giỏ hàng",
     "nav.contact": "Liên hệ",
     "nav.about": "Giới thiệu",
@@ -88,7 +88,7 @@ const messages = {
     "theme.toggle": "Toggle light/dark theme",
 
     "nav.home": "Home",
-    "nav.course": "Books",
+    "nav.course": "Products",
     "nav.cart": "Cart",
     "nav.contact": "Contact",
     "nav.about": "About",

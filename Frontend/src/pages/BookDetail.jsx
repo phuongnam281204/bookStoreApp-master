@@ -317,7 +317,7 @@ function BookDetail() {
 
                 <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-700 rounded-2xl shadow p-6">
                   <h2 className="text-lg font-semibold">Mô tả sản phẩm</h2>
-                  <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600 dark:text-slate-300">
                     {book.title || "Chưa có mô tả."}
                   </p>
                 </div>

@@ -14,14 +14,12 @@ function Course() {
   const [selectedAges, setSelectedAges] = useState([]);
   const [priceRange, setPriceRange] = useState("all");
   const [page, setPage] = useState(1);
-  const pageSize = 12;
+  const pageSize = 10;
 
-  const groupOptions = [
-    "Truyện tranh Việt Nam",
-    "Truyện tranh Nhật Bản (Manga)",
-    "Truyện tranh nước ngoài",
-    "Comic",
-  ];
+  const groupOptions = useMemo(() => {
+    const list = (book || []).map((b) => String(b?.category || "").trim()).filter(Boolean);
+    return Array.from(new Set(list));
+  }, [book]);
 
   const priceOptions = [
     { value: "all", label: "Tất cả" },
@@ -174,7 +172,7 @@ function Course() {
         ) : null}
 
         <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[260px,1fr]">
-          <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <aside className="self-start lg:sticky lg:top-28 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold">Bộ lọc</h2>
               <button
@@ -276,7 +274,7 @@ function Course() {
             {filteredBooks.length === 0 ? (
               <p className="mt-8 opacity-80">Không có sản phẩm phù hợp.</p>
             ) : (
-              <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="mt-6 grid grid-cols-2 gap-4 sm:gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {pagedBooks.map((item) => (
                   <Cards key={item._id || item.id} item={item} />
                 ))}

@@ -48,18 +48,7 @@ function Navbar() {
         <Link to="/">{t("nav.home")}</Link>
       </li>
       <li>
-        <Link to="/course" className="flex items-center gap-1">
-          <span>{t("nav.course")}</span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            className="w-4 h-4 opacity-70"
-            aria-hidden="true"
-          >
-            <path d="M12 15.5 5.5 9h13L12 15.5Z" />
-          </svg>
-        </Link>
+        <Link to="/course">{t("nav.course")}</Link>
       </li>
       <li>
         <Link to="/contact">{t("nav.contact")}</Link>
