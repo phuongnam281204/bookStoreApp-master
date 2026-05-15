@@ -24,6 +24,7 @@ const bookSchema = mongoose.Schema({
   rating: { type: Number, default: 0, min: 0, max: 5 },
   ratingCount: { type: Number, default: 0, min: 0 },
   ratingSum: { type: Number, default: 0, min: 0 },
+  soldCount: { type: Number, default: 0, min: 0 },
 });
 const Book = mongoose.model("Book", bookSchema);
 

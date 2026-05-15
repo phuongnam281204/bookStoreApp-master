@@ -4,6 +4,7 @@ import {
   deleteBook,
   getBookById,
   getBooks,
+  getBestSellers,
   getBookReviews,
   getInventoryLogs,
   getMyBookReview,
@@ -16,6 +17,7 @@ import { requireAdmin, requireAuth } from "../middleware/auth.middleware.js";
 const router = express.Router();
 
 router.get("/", getBooks);
+router.get("/bestsellers", getBestSellers);
 router.get("/:id/inventory-logs", requireAuth, requireAdmin, getInventoryLogs);
 router.get("/:id/reviews", getBookReviews);
 router.get("/:id/reviews/me", requireAuth, getMyBookReview);

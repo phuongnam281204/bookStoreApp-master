@@ -6,6 +6,7 @@ import axios from "axios";
 import Cards from "../components/Cards";
 import { Link, useNavigate } from "react-router-dom";
 import { useI18n } from "../context/I18nProvider";
+import WeeklyBestseller from "../components/WeeklyBestseller";
 
 function Home() {
   const [books, setBooks] = useState([]);
@@ -119,6 +120,8 @@ function Home() {
           )}
         </div>
       </div>
+
+      <WeeklyBestseller books={books} />
 
       <Footer />
     </>

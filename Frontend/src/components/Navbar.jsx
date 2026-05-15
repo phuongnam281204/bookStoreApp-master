@@ -226,10 +226,10 @@ function Navbar() {
                   </div>
                 </Link>
                 {authUser?.role === "admin" ? (
-                  <div className="dropdown dropdown-end hidden sm:block">
+                  <div className="dropdown dropdown-end">
                     <label
                       tabIndex={0}
-                      className="flex items-center gap-2 px-3 py-1 rounded-full bg-base-200 cursor-pointer"
+                      className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-full bg-base-200 cursor-pointer"
                       title={authUser.fullname || authUser.email}
                       aria-label={authUser.fullname || authUser.email}
                     >
@@ -247,7 +247,7 @@ function Navbar() {
                         />
                         <path d="M4 20a8 8 0 0 1 16 0v1H4v-1Z" />
                       </svg>
-                      <span className="max-w-40 truncate text-sm font-medium">
+                      <span className="max-w-24 sm:max-w-40 truncate text-sm font-medium hidden sm:block">
                         {authUser.fullname || authUser.email}
                       </span>
                       <svg
@@ -287,10 +287,10 @@ function Navbar() {
                     </ul>
                   </div>
                 ) : (
-                  <div className="dropdown dropdown-end hidden sm:block">
+                  <div className="dropdown dropdown-end">
                     <label
                       tabIndex={0}
-                      className="flex items-center gap-2 px-3 py-1 rounded-full bg-base-200 cursor-pointer"
+                      className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-full bg-base-200 cursor-pointer"
                       title={authUser.fullname || authUser.email}
                       aria-label={authUser.fullname || authUser.email}
                     >
@@ -308,7 +308,7 @@ function Navbar() {
                         />
                         <path d="M4 20a8 8 0 0 1 16 0v1H4v-1Z" />
                       </svg>
-                      <span className="max-w-40 truncate text-sm font-medium">
+                      <span className="max-w-24 sm:max-w-40 truncate text-sm font-medium hidden sm:block">
                         {authUser.fullname || authUser.email}
                       </span>
                       <svg

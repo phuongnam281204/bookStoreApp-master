@@ -16,6 +16,7 @@ import Checkout from "./pages/Checkout";
 import MyOrders from "./pages/MyOrders";
 import PaymentResult from "./pages/PaymentResult";
 import ResetPassword from "./pages/ResetPassword";
+import Leaderboard from "./pages/Leaderboard";
 
 function App() {
   const [authUser] = useAuth();
@@ -27,6 +28,7 @@ function App() {
           <Routes location={location}>
             <Route path="/" element={<Home />} />
             <Route path="/course" element={<Courses />} />
+            <Route path="/bestsellers" element={<Leaderboard />} />
             <Route path="/book/:id" element={<BookDetail />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />

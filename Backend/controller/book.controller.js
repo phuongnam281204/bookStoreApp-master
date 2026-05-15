@@ -31,6 +31,19 @@ export const getBooks = async (req, res) => {
   }
 };
 
+export const getBestSellers = async (req, res) => {
+  try {
+    const category = req.query.category;
+    const query = category ? { category: new RegExp(category, "i") } : {};
+    // Only return top 5 for the category as seen in UI, or maybe 10
+    const books = await Book.find(query).sort({ soldCount: -1 }).limit(10);
+    return res.status(200).json(books);
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const getBookById = async (req, res) => {
   try {
     const { id } = req.params;

@@ -86,7 +86,7 @@ const markOrderPaid = async (order) => {
           reserved: { $gte: qty },
           stock: { $gte: qty },
         },
-        { $inc: { reserved: -qty, stock: -qty } },
+        { $inc: { reserved: -qty, stock: -qty, soldCount: 1 } },
         { new: true },
       );
 
