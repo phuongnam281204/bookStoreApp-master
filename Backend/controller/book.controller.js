@@ -21,9 +21,99 @@ const normalizeRating = (value) => {
   return rating;
 };
 
+const escapeRegex = (value) =>
+  String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 export const getBooks = async (req, res) => {
   try {
-    const books = await Book.find();
+    const search = String(req.query.search || "").trim();
+    const category = String(req.query.category || "").trim();
+    const genre = String(req.query.genre || "").trim();
+    const stockStatus = String(req.query.stockStatus || "").trim();
+    const minPrice = req.query.minPrice;
+    const maxPrice = req.query.maxPrice;
+    const sortBy = String(req.query.sortBy || "").trim();
+    const sortDir = String(req.query.sortDir || "asc").toLowerCase();
+    const includeHidden =
+      String(req.query.includeHidden || "false").toLowerCase() === "true";
+
+    const match = {};
+    if (!includeHidden) {
+      match.isHidden = { $ne: true };
+    }
+    if (search) {
+      const safe = escapeRegex(search);
+      match.$or = [
+        { name: { $regex: safe, $options: "i" } },
+        { category: { $regex: safe, $options: "i" } },
+      ];
+    }
+    if (category) {
+      match.category = { $regex: escapeRegex(category), $options: "i" };
+    }
+    if (genre) {
+      const list = String(genre)
+        .split(",")
+        .map((g) => g.trim())
+        .filter(Boolean);
+      if (list.length) {
+        match.genres = { $in: list };
+      }
+    }
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      match.price = {};
+      if (minPrice !== undefined && minPrice !== "") {
+        match.price.$gte = Number(minPrice);
+      }
+      if (maxPrice !== undefined && maxPrice !== "") {
+        match.price.$lte = Number(maxPrice);
+      }
+    }
+
+    const needsAvailable = stockStatus || sortBy === "available";
+    const direction = sortDir === "desc" ? -1 : 1;
+    const sortMap = {
+      price: "price",
+      available: "available",
+      name: "name",
+      stock: "stock",
+    };
+    const sortField = sortMap[sortBy] || "name";
+
+    if (needsAvailable) {
+      const pipeline = [{ $match: match }];
+      pipeline.push({
+        $addFields: {
+          available: { $max: [{ $subtract: ["$stock", "$reserved"] }, 0] },
+        },
+      });
+
+      if (stockStatus === "out") {
+        pipeline.push({ $match: { available: { $lte: 0 } } });
+      } else if (stockStatus === "in") {
+        pipeline.push({ $match: { available: { $gt: 0 } } });
+      } else if (stockStatus === "low") {
+        pipeline.push({
+          $match: {
+            $expr: {
+              $and: [
+                { $gt: ["$available", 0] },
+                { $lte: ["$available", "$lowStockThreshold"] },
+              ],
+            },
+          },
+        });
+      }
+
+      pipeline.push({ $sort: { [sortField]: direction, name: 1 } });
+      const books = await Book.aggregate(pipeline);
+      return res.status(200).json(books);
+    }
+
+    const books = await Book.find(match).sort({
+      [sortField]: direction,
+      name: 1,
+    });
     return res.status(200).json(books);
   } catch (error) {
     console.log("Error: ", error);
@@ -86,6 +176,7 @@ export const createBook = async (req, res) => {
       weightGr,
       packageSize,
       pages,
+      isHidden,
     } = req.body;
 
     const parseImagesField = (value) => {
@@ -171,6 +262,7 @@ export const createBook = async (req, res) => {
         pages === undefined || pages === null || pages === ""
           ? 0
           : Number(pages),
+      isHidden: Boolean(isHidden),
     });
 
     return res.status(201).json({ message: "Book created", book });
@@ -236,6 +328,7 @@ export const updateBook = async (req, res) => {
       "weightGr",
       "packageSize",
       "pages",
+      "isHidden",
     ]) {
       if (!Object.prototype.hasOwnProperty.call(req.body, key)) continue;
 
@@ -286,6 +379,11 @@ export const updateBook = async (req, res) => {
         continue;
       }
 
+      if (key === "isHidden") {
+        updates.isHidden = Boolean(req.body[key]);
+        continue;
+      }
+
       updates[key] = String(req.body[key] || "").trim();
     }
 
@@ -314,6 +412,67 @@ export const deleteBook = async (req, res) => {
     await Book.findByIdAndDelete(id);
 
     return res.status(200).json({ message: "Book deleted" });
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const bulkUpdateBooks = async (req, res) => {
+  try {
+    const { ids, action, updates } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: "Ids are required" });
+    }
+
+    const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
+    if (!validIds.length) {
+      return res.status(400).json({ message: "No valid ids" });
+    }
+
+    const normalizedAction = String(action || "update")
+      .trim()
+      .toLowerCase();
+    if (normalizedAction === "delete") {
+      await Book.deleteMany({ _id: { $in: validIds } });
+      return res.status(200).json({ message: "Books deleted" });
+    }
+
+    const payload = {};
+    if (normalizedAction === "hide") {
+      payload.isHidden = true;
+    } else if (normalizedAction === "show") {
+      payload.isHidden = false;
+    } else if (normalizedAction === "update") {
+      const patch = updates || {};
+      if (Object.prototype.hasOwnProperty.call(patch, "price")) {
+        const parsed = Number(patch.price);
+        if (Number.isFinite(parsed)) payload.price = parsed;
+      }
+      if (Object.prototype.hasOwnProperty.call(patch, "stock")) {
+        const parsed = Number(patch.stock);
+        if (Number.isFinite(parsed)) payload.stock = parsed;
+      }
+      if (Object.prototype.hasOwnProperty.call(patch, "lowStockThreshold")) {
+        const parsed = Number(patch.lowStockThreshold);
+        if (Number.isFinite(parsed)) payload.lowStockThreshold = parsed;
+      }
+      if (Object.prototype.hasOwnProperty.call(patch, "category")) {
+        payload.category = String(patch.category || "").trim();
+      }
+      if (Object.prototype.hasOwnProperty.call(patch, "isHidden")) {
+        payload.isHidden = Boolean(patch.isHidden);
+      }
+    } else {
+      return res.status(400).json({ message: "Invalid action" });
+    }
+
+    if (!Object.keys(payload).length) {
+      return res.status(400).json({ message: "No updates provided" });
+    }
+
+    await Book.updateMany({ _id: { $in: validIds } }, { $set: payload });
+    return res.status(200).json({ message: "Books updated" });
   } catch (error) {
     console.log("Error: ", error);
     return res.status(500).json({ message: "Internal server error" });

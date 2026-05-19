@@ -626,6 +626,56 @@ export const getOrderDetail = async (req, res) => {
   }
 };
 
+export const getAdminSummary = async (req, res) => {
+  try {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const totalBooks = await Book.countDocuments({});
+    const lowStockAgg = await Book.aggregate([
+      {
+        $addFields: {
+          available: { $max: [{ $subtract: ["$stock", "$reserved"] }, 0] },
+        },
+      },
+      {
+        $match: {
+          $expr: { $lte: ["$available", 5] },
+        },
+      },
+      { $count: "count" },
+    ]);
+    const lowStockCount = lowStockAgg?.[0]?.count || 0;
+
+    const revenueAgg = await Order.aggregate([
+      {
+        $match: {
+          paymentStatus: "paid",
+          createdAt: { $gte: sevenDaysAgo },
+        },
+      },
+      { $group: { _id: null, total: { $sum: "$total" } } },
+    ]);
+    const revenue7d = Number(revenueAgg?.[0]?.total || 0);
+
+    const recentOrders = await Order.find({})
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select("_id total status paymentStatus createdAt userId")
+      .populate("userId", "fullname email");
+
+    return res.status(200).json({
+      totalBooks,
+      lowStockCount,
+      revenue7d,
+      recentOrders,
+    });
+  } catch (error) {
+    console.log("Error: " + error.message);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const vnpayReturn = async (req, res) => {
   const config = getVnpayConfig();
   const frontend = `${config.frontendOrigin.replace(/\/$/, "")}/payment-result`;

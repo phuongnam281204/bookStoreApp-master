@@ -25,6 +25,7 @@ const bookSchema = mongoose.Schema({
   ratingCount: { type: Number, default: 0, min: 0 },
   ratingSum: { type: Number, default: 0, min: 0 },
   soldCount: { type: Number, default: 0, min: 0 },
+  isHidden: { type: Boolean, default: false },
 });
 const Book = mongoose.model("Book", bookSchema);
 

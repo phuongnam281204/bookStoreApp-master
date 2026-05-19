@@ -2,6 +2,7 @@ import express from "express";
 import {
   cancelOrder,
   createOrder,
+  getAdminSummary,
   getOrderDetail,
   getAllOrders,
   getMyOrders,
@@ -15,6 +16,7 @@ import { requireAdmin, requireAuth } from "../middleware/auth.middleware.js";
 const router = express.Router();
 
 router.post("/", requireAuth, createOrder);
+router.get("/admin/summary", requireAuth, requireAdmin, getAdminSummary);
 router.get("/vnpay/return", vnpayReturn);
 router.get("/vnpay/ipn", vnpayIpn);
 router.post("/:id/cancel", requireAuth, cancelOrder);

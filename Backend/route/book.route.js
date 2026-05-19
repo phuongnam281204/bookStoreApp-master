@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  bulkUpdateBooks,
   createBook,
   deleteBook,
   getBookById,
@@ -18,6 +19,7 @@ const router = express.Router();
 
 router.get("/", getBooks);
 router.get("/bestsellers", getBestSellers);
+router.patch("/bulk", requireAuth, requireAdmin, bulkUpdateBooks);
 router.get("/:id/inventory-logs", requireAuth, requireAdmin, getInventoryLogs);
 router.get("/:id/reviews", getBookReviews);
 router.get("/:id/reviews/me", requireAuth, getMyBookReview);
