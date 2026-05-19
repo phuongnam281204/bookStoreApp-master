@@ -54,8 +54,7 @@ function Login({ defaultTab = "login", autoOpen = false }) {
     script.async = true;
     script.defer = true;
     script.onload = () => setGoogleReady(true);
-    script.onerror = () =>
-      toast.error(t("auth.toast.loginFailed") || "Google load failed");
+    script.onerror = () => toast.error(t("auth.googleLoadFailed"));
     document.body.appendChild(script);
   }, [googleClientId, t]);
 
@@ -151,7 +150,7 @@ function Login({ defaultTab = "login", autoOpen = false }) {
     e.preventDefault();
     const email = forgotEmail.trim();
     if (!email) {
-      toast.error("Vui lòng nhập email");
+      toast.error(t("auth.forgotEmailRequired"));
       return;
     }
 
@@ -162,15 +161,15 @@ function Login({ defaultTab = "login", autoOpen = false }) {
         { withCredentials: true },
       );
       if (res?.data?.resetLink) {
-        toast.success("Link reset (dev): " + res.data.resetLink);
+        toast.success(t("auth.forgotResetLink") + res.data.resetLink);
       } else {
-        toast.success("Nếu email tồn tại, link khôi phục sẽ được gửi");
+        toast.success(t("auth.forgotSent"));
       }
       setForgotEmail("");
       document.getElementById("forgot_password_modal")?.close();
     } catch (err) {
       const message =
-        err?.response?.data?.message || err?.message || "Không thể gửi yêu cầu";
+        err?.response?.data?.message || err?.message || t("auth.forgotFailed");
       toast.error(message);
     }
   };
@@ -369,7 +368,7 @@ function Login({ defaultTab = "login", autoOpen = false }) {
                   className="text-sm font-semibold text-slate-500 hover:text-slate-700"
                   onClick={openForgotModal}
                 >
-                  Quên mật khẩu?
+                  {t("auth.forgot")}
                 </button>
                 <p className="text-sm">
                   {t("auth.login.notRegistered")}{" "}
@@ -384,13 +383,33 @@ function Login({ defaultTab = "login", autoOpen = false }) {
               </div>
             </form>
           ) : (
-            <form onSubmit={signupForm.handleSubmit(submitSignup)}>
+            <form
+              onSubmit={signupForm.handleSubmit(submitSignup)}
+              autoComplete="off"
+            >
+              <input
+                type="text"
+                name="username"
+                autoComplete="username"
+                tabIndex={-1}
+                aria-hidden="true"
+                style={{ position: "absolute", left: "-9999px" }}
+              />
+              <input
+                type="password"
+                name="new-password"
+                autoComplete="new-password"
+                tabIndex={-1}
+                aria-hidden="true"
+                style={{ position: "absolute", left: "-9999px" }}
+              />
               <div className="mt-5 space-y-2">
                 <span>{t("auth.signup.name")}</span>
                 <input
                   type="text"
                   placeholder={t("auth.signup.namePlaceholder")}
                   className="input input-bordered w-full"
+                  autoComplete="name"
                   {...signupForm.register("fullname", { required: true })}
                 />
                 {signupForm.formState.errors.fullname && (
@@ -406,6 +425,7 @@ function Login({ defaultTab = "login", autoOpen = false }) {
                   type="email"
                   placeholder={t("auth.signup.emailPlaceholder")}
                   className="input input-bordered w-full"
+                  autoComplete="email"
                   {...signupForm.register("email", { required: true })}
                 />
                 {signupForm.formState.errors.email && (
@@ -422,6 +442,7 @@ function Login({ defaultTab = "login", autoOpen = false }) {
                     type={showSignupPassword ? "text" : "password"}
                     placeholder={t("auth.signup.passwordPlaceholder")}
                     className="input input-bordered w-full pr-16"
+                    autoComplete="new-password"
                     {...signupForm.register("password", { required: true })}
                   />
                   <button
@@ -518,14 +539,12 @@ function Login({ defaultTab = "login", autoOpen = false }) {
 
       <dialog id="forgot_password_modal" className="modal">
         <div className="modal-box">
-          <h3 className="text-lg font-semibold">Quên mật khẩu</h3>
-          <p className="mt-2 text-sm text-slate-600">
-            Nhập email để nhận link đặt lại mật khẩu.
-          </p>
+          <h3 className="text-lg font-semibold">{t("auth.forgotTitle")}</h3>
+          <p className="mt-2 text-sm text-slate-600">{t("auth.forgotDesc")}</p>
           <form className="mt-4 space-y-3" onSubmit={submitForgot}>
             <input
               type="email"
-              placeholder="Nhập email"
+              placeholder={t("auth.forgotEmailPlaceholder")}
               className="input input-bordered w-full"
               value={forgotEmail}
               onChange={(e) => setForgotEmail(e.target.value)}
@@ -533,7 +552,7 @@ function Login({ defaultTab = "login", autoOpen = false }) {
             />
             <div className="flex gap-2">
               <button type="submit" className="btn btn-primary">
-                Gửi link
+                {t("auth.forgotSend")}
               </button>
               <button
                 type="button"
@@ -542,7 +561,7 @@ function Login({ defaultTab = "login", autoOpen = false }) {
                   document.getElementById("forgot_password_modal")?.close()
                 }
               >
-                Hủy
+                {t("auth.cancel")}
               </button>
             </div>
           </form>
