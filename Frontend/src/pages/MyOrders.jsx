@@ -3,6 +3,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { useI18n } from "../context/I18nProvider";
 
 const formatVnd = (value) =>
   new Intl.NumberFormat("vi-VN", {
@@ -10,20 +11,9 @@ const formatVnd = (value) =>
     currency: "VND",
   }).format(value || 0);
 
-const statusLabel = (status) => {
-  if (status === "paid") return "Đã thanh toán";
-  if (status === "cancelled") return "Đã hủy";
-  return "Đã đặt";
-};
-
-const paymentLabel = (status) => {
-  if (status === "paid") return "Đã thanh toán";
-  if (status === "pending") return "Đang xử lý";
-  if (status === "failed") return "Thất bại";
-  return "Chưa thanh toán";
-};
-
 function MyOrders() {
+  const { t, lang } = useI18n();
+  const locale = lang === "vi" ? "vi-VN" : "en-US";
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
@@ -36,11 +26,24 @@ function MyOrders() {
       setOrders(res.data || []);
     } catch (err) {
       const message =
-        err?.response?.data?.message || err?.message || "Không tải được";
+        err?.response?.data?.message || err?.message || t("orders.loadFailed");
       toast.error(message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const statusLabel = (status) => {
+    if (status === "paid") return t("orders.status.paid");
+    if (status === "cancelled") return t("orders.status.cancelled");
+    return t("orders.status.placed");
+  };
+
+  const paymentLabel = (status) => {
+    if (status === "paid") return t("orders.payment.paid");
+    if (status === "pending") return t("orders.payment.pending");
+    if (status === "failed") return t("orders.payment.failed");
+    return t("orders.payment.unpaid");
   };
 
   useEffect(() => {
@@ -63,11 +66,13 @@ function MyOrders() {
         {},
         { withCredentials: true },
       );
-      toast.success("Đã hủy đơn");
+      toast.success(t("orders.cancelSuccess"));
       await load();
     } catch (err) {
       const message =
-        err?.response?.data?.message || err?.message || "Hủy đơn thất bại";
+        err?.response?.data?.message ||
+        err?.message ||
+        t("orders.cancelFailed");
       toast.error(message);
     } finally {
       setBusyId(null);
@@ -81,25 +86,23 @@ function MyOrders() {
       <div className="max-w-screen-2xl container mx-auto md:px-20 px-4 min-h-screen pt-28 pb-16">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Đơn hàng của tôi</h1>
-            <p className="mt-1 text-sm opacity-70">
-              Theo dõi trạng thái và hủy đơn chưa thanh toán.
-            </p>
+            <h1 className="text-2xl font-bold">{t("orders.title")}</h1>
+            <p className="mt-1 text-sm opacity-70">{t("orders.subtitle")}</p>
           </div>
           <button
             className="px-4 py-2 rounded-md border dark:border-slate-700"
             onClick={load}
           >
-            Tải lại
+            {t("orders.reload")}
           </button>
         </div>
 
         <div className="mt-6">
           {loading ? (
-            <p>Loading...</p>
+            <p>{t("orders.loading")}</p>
           ) : !orders.length ? (
             <div className="rounded-2xl border border-dashed p-8 text-center">
-              Bạn chưa có đơn hàng nào.
+              {t("orders.empty")}
             </div>
           ) : (
             <div className="space-y-4">
@@ -116,14 +119,14 @@ function MyOrders() {
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
                         <div className="text-sm text-slate-500">
-                          Mã đơn:{" "}
-                          <span className="font-semibold">
+                          {t("orders.code")}:
+                          <span className="ml-1 font-semibold">
                             #{String(order._id).slice(-6)}
                           </span>
                         </div>
                         <div className="mt-2 text-sm text-slate-500">
                           {order.createdAt
-                            ? new Date(order.createdAt).toLocaleString("vi-VN")
+                            ? new Date(order.createdAt).toLocaleString(locale)
                             : ""}
                         </div>
                       </div>
@@ -144,7 +147,7 @@ function MyOrders() {
 
                     <details className="mt-4">
                       <summary className="cursor-pointer text-sm font-semibold text-slate-600">
-                        Xem chi tiết sản phẩm
+                        {t("orders.details")}
                       </summary>
                       <div className="mt-3 grid gap-2 text-sm text-slate-600">
                         {order.items?.map((item) => (
@@ -160,7 +163,8 @@ function MyOrders() {
                         ))}
                       </div>
                       <div className="mt-3 text-sm text-slate-500">
-                        Địa chỉ: {order.shippingAddress?.addressLine || "-"}
+                        {t("orders.address")}:{" "}
+                        {order.shippingAddress?.addressLine || "-"}
                         {order.shippingAddress?.city
                           ? `, ${order.shippingAddress.city}`
                           : ""}
@@ -174,7 +178,7 @@ function MyOrders() {
                         onClick={() => openCancelModal(order)}
                         disabled={!canCancel || busyId === order._id}
                       >
-                        Hủy đơn
+                        {t("orders.cancel")}
                       </button>
                     </div>
                   </div>
@@ -186,20 +190,20 @@ function MyOrders() {
       </div>
       <dialog id="cancel_order_modal" className="modal">
         <div className="modal-box">
-          <h3 className="text-lg font-semibold">Xác nhận hủy đơn</h3>
+          <h3 className="text-lg font-semibold">{t("orders.cancelTitle")}</h3>
           <p className="mt-2 text-sm text-slate-600">
-            Bạn có chắc chắn muốn hủy đơn hàng này không?
+            {t("orders.cancelQuestion")}
           </p>
           {confirmOrder ? (
             <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
               <div>
-                Mã đơn:{" "}
+                {t("orders.code")}:
                 <span className="font-semibold">
                   #{String(confirmOrder._id).slice(-6)}
                 </span>
               </div>
               <div className="mt-1">
-                Tổng tiền:{" "}
+                {t("checkout.total")}:
                 <span className="font-semibold">
                   {formatVnd(confirmOrder.total)}
                 </span>
@@ -216,7 +220,7 @@ function MyOrders() {
                   document.getElementById("cancel_order_modal")?.close();
                 }}
               >
-                Quay lại
+                {t("orders.back")}
               </button>
               <button
                 type="button"
@@ -228,7 +232,7 @@ function MyOrders() {
                 }}
                 disabled={busyId === confirmOrder?._id}
               >
-                Xác nhận hủy
+                {t("orders.confirmCancel")}
               </button>
             </form>
           </div>

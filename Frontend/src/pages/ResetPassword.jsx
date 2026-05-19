@@ -4,6 +4,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { useI18n } from "../context/I18nProvider";
 
 const isStrongPassword = (value) => {
   if (typeof value !== "string") return false;
@@ -14,6 +15,7 @@ const isStrongPassword = (value) => {
 };
 
 function ResetPassword() {
+  const { t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
@@ -28,15 +30,15 @@ function ResetPassword() {
   const submit = async (e) => {
     e.preventDefault();
     if (!token) {
-      toast.error("Thiếu token đặt lại mật khẩu");
+      toast.error(t("reset.missingToken"));
       return;
     }
     if (!isStrongPassword(password)) {
-      toast.error("Mật khẩu phải >= 8 ký tự, gồm chữ và số");
+      toast.error(t("reset.weakPassword"));
       return;
     }
     if (password !== confirmPassword) {
-      toast.error("Mật khẩu xác nhận không khớp");
+      toast.error(t("reset.mismatch"));
       return;
     }
 
@@ -47,11 +49,11 @@ function ResetPassword() {
         { token, password },
         { withCredentials: true },
       );
-      toast.success("Đặt lại mật khẩu thành công");
+      toast.success(t("reset.success"));
       navigate("/");
     } catch (err) {
       const message =
-        err?.response?.data?.message || err?.message || "Đặt lại thất bại";
+        err?.response?.data?.message || err?.message || t("reset.failed");
       toast.error(message);
     } finally {
       setLoading(false);
@@ -63,28 +65,30 @@ function ResetPassword() {
       <Navbar />
       <div className="max-w-screen-sm container mx-auto px-4 min-h-screen pt-28 pb-16">
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <h1 className="text-2xl font-semibold">Đặt lại mật khẩu</h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Nhập mật khẩu mới cho tài khoản của bạn.
-          </p>
+          <h1 className="text-2xl font-semibold">{t("reset.title")}</h1>
+          <p className="mt-2 text-sm text-slate-600">{t("reset.subtitle")}</p>
 
           <form className="mt-6 space-y-4" onSubmit={submit}>
             <div>
-              <label className="text-sm font-medium">Mật khẩu mới</label>
+              <label className="text-sm font-medium">
+                {t("reset.newPassword")}
+              </label>
               <input
                 type="password"
                 className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
-                placeholder="Ít nhất 8 ký tự, gồm chữ và số"
+                placeholder={t("reset.newPasswordPlaceholder")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Nhập lại mật khẩu</label>
+              <label className="text-sm font-medium">
+                {t("reset.confirmPassword")}
+              </label>
               <input
                 type="password"
                 className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
-                placeholder="Nhập lại mật khẩu"
+                placeholder={t("reset.confirmPasswordPlaceholder")}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
@@ -94,7 +98,7 @@ function ResetPassword() {
               className="w-full rounded-xl bg-rose-600 py-3 text-sm font-semibold text-white disabled:opacity-60"
               disabled={loading}
             >
-              {loading ? "Đang xử lý..." : "Cập nhật mật khẩu"}
+              {loading ? t("reset.submitting") : t("reset.submit")}
             </button>
           </form>
         </div>

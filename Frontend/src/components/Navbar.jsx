@@ -77,8 +77,8 @@ function Navbar() {
                 tabIndex={0}
                 role="button"
                 className="btn btn-ghost btn-sm"
-                aria-label="Menu"
-                title="Menu"
+                aria-label={t("nav.menu")}
+                title={t("nav.menu")}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -94,7 +94,7 @@ function Navbar() {
                     d="M4 6h16M4 12h8m-8 6h16"
                   />
                 </svg>
-                <span className="hidden sm:inline ml-1">Menu</span>
+                <span className="hidden sm:inline ml-1">{t("nav.menu")}</span>
               </div>
               <ul
                 tabIndex={0}

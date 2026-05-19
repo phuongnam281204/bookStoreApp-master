@@ -5,26 +5,10 @@ import Footer from "../components/Footer";
 import toast from "react-hot-toast";
 import { useCart } from "../context/CartProvider";
 import axios from "axios";
-
-const getStatusConfig = (status) => {
-  if (status === "success") {
-    return {
-      title: "Thanh toán thành công",
-      desc: "Đơn hàng của bạn đã được ghi nhận. Cảm ơn bạn đã mua hàng!",
-      tone: "text-emerald-600",
-      badge: "bg-emerald-100 text-emerald-700",
-    };
-  }
-
-  return {
-    title: "Thanh toán thất bại",
-    desc: "Giao dịch không thành công hoặc đã bị hủy. Bạn có thể thử lại.",
-    tone: "text-rose-600",
-    badge: "bg-rose-100 text-rose-700",
-  };
-};
+import { useI18n } from "../context/I18nProvider";
 
 function PaymentResult() {
+  const { t } = useI18n();
   const location = useLocation();
   const { clear } = useCart();
   const [verifying, setVerifying] = useState(false);
@@ -48,15 +32,15 @@ function PaymentResult() {
     const verify = async () => {
       if (!orderId) {
         if (payment === "success") {
-          toast.error("Thiếu mã đơn hàng để xác nhận thanh toán");
+          toast.error(t("payment.missingOrder"));
         } else {
-          toast.error("Thanh toán thất bại");
+          toast.error(t("payment.failedToast"));
         }
         return;
       }
 
       if (payment !== "success") {
-        toast.error("Thanh toán thất bại");
+        toast.error(t("payment.failedToast"));
         return;
       }
 
@@ -68,14 +52,14 @@ function PaymentResult() {
         const status = res?.data?.order?.paymentStatus;
         if (!mounted) return;
         if (status === "paid") {
-          toast.success("Thanh toán thành công");
+          toast.success(t("payment.successTitle"));
           clear();
         } else {
-          toast.error("Thanh toán chưa được xác nhận");
+          toast.error(t("payment.notVerified"));
         }
       } catch (err) {
         if (!mounted) return;
-        toast.error("Không thể xác nhận thanh toán");
+        toast.error(t("payment.verifyFailed"));
       } finally {
         if (mounted) setVerifying(false);
       }
@@ -87,7 +71,20 @@ function PaymentResult() {
     };
   }, [payment, orderId, clear]);
 
-  const status = getStatusConfig(payment);
+  const status =
+    payment === "success"
+      ? {
+          title: t("payment.successTitle"),
+          desc: t("payment.successDesc"),
+          tone: "text-emerald-600",
+          badge: "bg-emerald-100 text-emerald-700",
+        }
+      : {
+          title: t("payment.failedTitle"),
+          desc: t("payment.failedDesc"),
+          tone: "text-rose-600",
+          badge: "bg-rose-100 text-rose-700",
+        };
 
   return (
     <>
@@ -97,27 +94,31 @@ function PaymentResult() {
           <div
             className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${status.badge}`}
           >
-            {payment === "success" ? "SUCCESS" : "FAILED"}
+            {payment === "success"
+              ? t("payment.badgeSuccess")
+              : t("payment.badgeFailed")}
           </div>
           <h1 className={`mt-4 text-2xl font-bold ${status.tone}`}>
             {status.title}
           </h1>
           <p className="mt-2 text-sm text-slate-600">
-            {verifying ? "Đang xác nhận giao dịch..." : status.desc}
+            {verifying ? t("payment.verifying") : status.desc}
           </p>
 
           {orderId ? (
             <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
               <div>
-                Mã đơn:{" "}
-                <span className="font-semibold">#{orderId.slice(-6)}</span>
+                {t("payment.orderCode")}:
+                <span className="ml-1 font-semibold">#{orderId.slice(-6)}</span>
               </div>
               <div className="mt-1 text-xs text-slate-500">{orderId}</div>
             </div>
           ) : null}
 
           {reason ? (
-            <div className="mt-3 text-xs text-slate-500">Mã lỗi: {reason}</div>
+            <div className="mt-3 text-xs text-slate-500">
+              {t("payment.reason")}: {reason}
+            </div>
           ) : null}
 
           <div className="mt-6 flex flex-wrap gap-3">
@@ -125,21 +126,21 @@ function PaymentResult() {
               to="/orders"
               className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
             >
-              Xem đơn hàng
+              {t("payment.viewOrders")}
             </Link>
             {payment !== "success" ? (
               <Link
                 to="/checkout"
                 className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold"
               >
-                Quay lại thanh toán
+                {t("payment.backToCheckout")}
               </Link>
             ) : null}
             <Link
               to="/"
               className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold"
             >
-              Về trang chủ
+              {t("payment.backHome")}
             </Link>
           </div>
         </div>

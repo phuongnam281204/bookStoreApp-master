@@ -6,6 +6,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthProvider";
 import { useCart } from "../context/CartProvider";
+import { useI18n } from "../context/I18nProvider";
 
 const formatVnd = (value) =>
   new Intl.NumberFormat("vi-VN", {
@@ -14,6 +15,8 @@ const formatVnd = (value) =>
   }).format(value || 0);
 
 function Checkout() {
+  const { t, lang } = useI18n();
+  const locale = lang === "vi" ? "vi-VN" : "en-US";
   const { items, clear, totals } = useCart();
   const [authUser] = useAuth();
   const [payment, setPayment] = useState("momo");
@@ -130,11 +133,11 @@ function Checkout() {
   const applyVoucher = async () => {
     const code = voucherCode.trim().toUpperCase();
     if (!code) {
-      setVoucherError("Vui lòng nhập mã khuyến mãi");
+      setVoucherError(t("checkout.voucherEmpty"));
       return;
     }
     if (!authUser?._id) {
-      setVoucherError("Vui lòng đăng nhập để áp dụng mã");
+      setVoucherError(t("checkout.voucherLogin"));
       return;
     }
 
@@ -149,14 +152,16 @@ function Checkout() {
         setVoucherInfo(voucher);
         setVoucherCode(voucher.code);
         setVoucherError("");
-        toast.success("Áp dụng mã thành công");
+        toast.success(t("checkout.voucherAppliedToast"));
       } else {
         setVoucherInfo(null);
-        setVoucherError("Mã không hợp lệ");
+        setVoucherError(t("checkout.voucherInvalid"));
       }
     } catch (err) {
       const message =
-        err?.response?.data?.message || err?.message || "Không thể áp dụng mã";
+        err?.response?.data?.message ||
+        err?.message ||
+        t("checkout.voucherFailed");
       setVoucherInfo(null);
       setVoucherError(message);
       toast.error(message);
@@ -171,11 +176,11 @@ function Checkout() {
 
   const placeOrder = async () => {
     if (!items.length) {
-      toast.error("Giỏ hàng trống");
+      toast.error(t("checkout.emptyCart"));
       return;
     }
     if (!authUser?._id) {
-      toast.error("Vui lòng đăng nhập để thanh toán");
+      toast.error(t("checkout.loginRequired"));
       return;
     }
 
@@ -216,13 +221,15 @@ function Checkout() {
       }
 
       if (res.data) {
-        toast.success("Đặt hàng thành công");
+        toast.success(t("checkout.placeSuccess"));
         clear();
         clearVoucher();
       }
     } catch (err) {
       const message =
-        err?.response?.data?.message || err?.message || "Đặt hàng thất bại";
+        err?.response?.data?.message ||
+        err?.message ||
+        t("checkout.placeFailed");
       toast.error(message);
     }
   };
@@ -235,13 +242,13 @@ function Checkout() {
     <>
       <Navbar />
       <div className="max-w-screen-2xl container mx-auto md:px-20 px-4 min-h-screen pt-28 pb-16">
-        <h1 className="text-2xl font-bold">THANH TOÁN</h1>
+        <h1 className="text-2xl font-bold">{t("checkout.title")}</h1>
 
         {!items.length ? (
           <div className="mt-6 rounded-2xl border border-dashed p-8 text-center">
-            Giỏ hàng trống. Vui lòng quay lại{" "}
+            {t("checkout.empty")}
             <Link className="text-blue-600" to="/cart">
-              giỏ hàng
+              {t("checkout.cartLink")}
             </Link>
             .
           </div>
@@ -250,57 +257,63 @@ function Checkout() {
             <div className="space-y-4">
               <div className="rounded-2xl border bg-white p-4 shadow-sm">
                 <div className="text-sm font-semibold uppercase text-slate-500">
-                  Địa chỉ giao hàng
+                  {t("checkout.shippingTitle")}
                 </div>
                 <div className="mt-4 grid grid-cols-1 gap-3">
                   <div>
                     <label className="text-sm font-medium">
-                      Họ và tên người nhận
+                      {t("checkout.fullName")}
                     </label>
                     <input
                       type="text"
-                      placeholder="Nhập họ và tên người nhận"
+                      placeholder={t("checkout.fullNamePlaceholder")}
                       className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Email</label>
+                    <label className="text-sm font-medium">
+                      {t("checkout.email")}
+                    </label>
                     <input
                       type="email"
-                      placeholder="Nhập email"
+                      placeholder={t("checkout.emailPlaceholder")}
                       className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Số điện thoại</label>
+                    <label className="text-sm font-medium">
+                      {t("checkout.phone")}
+                    </label>
                     <input
                       type="tel"
-                      placeholder="Ví dụ: 0978123xxx"
+                      placeholder={t("checkout.phonePlaceholder")}
                       className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Quốc gia</label>
+                    <label className="text-sm font-medium">
+                      {t("checkout.country")}
+                    </label>
                     <select className="mt-1 w-full rounded-md border px-3 py-2 text-sm">
-                      <option>Việt Nam</option>
+                      <option>{t("checkout.countryPlaceholder")}</option>
                     </select>
                   </div>
                   <div>
                     <label className="text-sm font-medium">
-                      Tỉnh/Thành phố
+                      {t("checkout.city")}
                     </label>
                     <select
                       className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                       value={cityCode}
                       onChange={(e) => setCityCode(e.target.value)}
                     >
-                      <option value="">Chọn tỉnh/thành phố</option>
+                      <option value="">{t("checkout.cityPlaceholder")}</option>
                       {cities.map((city) => (
                         <option key={city.code} value={city.code}>
                           {city.name}
@@ -309,14 +322,18 @@ function Checkout() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Quận/Huyện</label>
+                    <label className="text-sm font-medium">
+                      {t("checkout.district")}
+                    </label>
                     <select
                       className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                       value={districtCode}
                       onChange={(e) => setDistrictCode(e.target.value)}
                       disabled={!districts.length}
                     >
-                      <option value="">Chọn quận/huyện</option>
+                      <option value="">
+                        {t("checkout.districtPlaceholder")}
+                      </option>
                       {districts.map((district) => (
                         <option key={district.code} value={district.code}>
                           {district.name}
@@ -325,14 +342,16 @@ function Checkout() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Phường/Xã</label>
+                    <label className="text-sm font-medium">
+                      {t("checkout.ward")}
+                    </label>
                     <select
                       className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                       value={wardCode}
                       onChange={(e) => setWardCode(e.target.value)}
                       disabled={!wards.length}
                     >
-                      <option value="">Chọn phường/xã</option>
+                      <option value="">{t("checkout.wardPlaceholder")}</option>
                       {wards.map((ward) => (
                         <option key={ward.code} value={ward.code}>
                           {ward.name}
@@ -342,11 +361,11 @@ function Checkout() {
                   </div>
                   <div>
                     <label className="text-sm font-medium">
-                      Địa chỉ nhận hàng
+                      {t("checkout.addressLine")}
                     </label>
                     <input
                       type="text"
-                      placeholder="Nhập địa chỉ nhận hàng"
+                      placeholder={t("checkout.addressLinePlaceholder")}
                       className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                       value={addressLine}
                       onChange={(e) => setAddressLine(e.target.value)}
@@ -357,16 +376,16 @@ function Checkout() {
 
               <div className="rounded-2xl border bg-white p-4 shadow-sm">
                 <div className="text-sm font-semibold uppercase text-slate-500">
-                  Phương thức vận chuyển
+                  {t("checkout.shippingMethod")}
                 </div>
                 <div className="mt-3 text-sm text-slate-600">
-                  Quý khách vui lòng điền sẵn địa chỉ giao nhận trước.
+                  {t("checkout.shippingNote")}
                 </div>
               </div>
 
               <div className="rounded-2xl border bg-white p-4 shadow-sm">
                 <div className="text-sm font-semibold uppercase text-slate-500">
-                  Phương thức thanh toán
+                  {t("checkout.paymentMethod")}
                 </div>
                 <div className="mt-4 space-y-3 text-sm">
                   <label className="flex items-center gap-3">
@@ -377,7 +396,7 @@ function Checkout() {
                       checked={payment === "momo"}
                       onChange={() => setPayment("momo")}
                     />
-                    <span>Ví MoMo</span>
+                    <span>{t("checkout.paymentMomo")}</span>
                   </label>
                   <label className="flex items-center gap-3">
                     <input
@@ -387,7 +406,7 @@ function Checkout() {
                       checked={payment === "vnpay"}
                       onChange={() => setPayment("vnpay")}
                     />
-                    <span>VNPAY</span>
+                    <span>{t("checkout.paymentVnpay")}</span>
                   </label>
                   <label className="flex items-center gap-3">
                     <input
@@ -397,19 +416,19 @@ function Checkout() {
                       checked={payment === "cod"}
                       onChange={() => setPayment("cod")}
                     />
-                    <span>Thanh toán bằng tiền mặt khi nhận hàng (COD)</span>
+                    <span>{t("checkout.paymentCod")}</span>
                   </label>
                 </div>
               </div>
 
               <div className="rounded-2xl border bg-white p-4 shadow-sm">
                 <div className="text-sm font-semibold uppercase text-slate-500">
-                  Mã khuyến mãi / Gift card
+                  {t("checkout.voucherTitle")}
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-3">
                   <input
                     type="text"
-                    placeholder="Nhập mã khuyến mãi"
+                    placeholder={t("checkout.voucherPlaceholder")}
                     className="flex-1 rounded-md border px-3 py-2 text-sm"
                     value={voucherCode}
                     onChange={(e) => setVoucherCode(e.target.value)}
@@ -419,7 +438,7 @@ function Checkout() {
                     className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white"
                     onClick={applyVoucher}
                   >
-                    Áp dụng
+                    {t("checkout.voucherApply")}
                   </button>
                   {voucherInfo ? (
                     <button
@@ -427,19 +446,20 @@ function Checkout() {
                       className="text-sm text-rose-600"
                       onClick={clearVoucher}
                     >
-                      Bỏ mã
+                      {t("checkout.voucherRemove")}
                     </button>
                   ) : (
                     <button type="button" className="text-sm text-blue-600">
-                      Chọn khuyến mãi
+                      {t("checkout.voucherPick")}
                     </button>
                   )}
                 </div>
                 {voucherInfo ? (
                   <div className="mt-2 text-xs text-emerald-600">
-                    Đã áp dụng: {voucherInfo.code} (-{discountPercent}%)
+                    {t("checkout.voucherApplied")}: {voucherInfo.code} (-
+                    {discountPercent}%)
                     {voucherInfo.expiresAt
-                      ? `, hết hạn ${new Date(voucherInfo.expiresAt).toLocaleDateString("vi-VN")}`
+                      ? `, ${t("checkout.voucherExpires")} ${new Date(voucherInfo.expiresAt).toLocaleDateString(locale)}`
                       : ""}
                   </div>
                 ) : null}
@@ -449,13 +469,13 @@ function Checkout() {
                   </div>
                 ) : null}
                 <button className="mt-3 text-xs text-slate-500">
-                  Hướng dẫn sử dụng Gift Card
+                  {t("checkout.voucherGuide")}
                 </button>
               </div>
 
               <div className="rounded-2xl border bg-white p-4 shadow-sm">
                 <div className="text-sm font-semibold uppercase text-slate-500">
-                  Thông tin khác
+                  {t("checkout.otherInfo")}
                 </div>
                 <div className="mt-3 flex items-center gap-2 text-sm">
                   <input
@@ -464,18 +484,17 @@ function Checkout() {
                     checked={invoiceRequested}
                     onChange={(e) => setInvoiceRequested(e.target.checked)}
                   />
-                  <span>Xuất hóa đơn GTGT</span>
+                  <span>{t("checkout.invoice")}</span>
                 </div>
                 <textarea
                   className="mt-3 w-full rounded-md border px-3 py-2 text-sm"
                   rows={3}
-                  placeholder="Ghi chú"
+                  placeholder={t("checkout.notePlaceholder")}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                 />
                 <div className="mt-2 text-xs text-red-500">
-                  Lưu ý: Chỉ xuất hóa đơn cho đơn hàng có thông tin đầy đủ và
-                  chính xác.
+                  {t("checkout.invoiceNote")}
                 </div>
               </div>
             </div>
@@ -483,7 +502,7 @@ function Checkout() {
             <div className="space-y-4">
               <div className="rounded-2xl border bg-white p-4 shadow-sm">
                 <div className="text-sm font-semibold uppercase text-slate-500">
-                  Kiểm tra lại đơn hàng
+                  {t("checkout.orderReview")}
                 </div>
                 <div className="mt-4 space-y-3">
                   {items.map((item) => (
@@ -513,24 +532,32 @@ function Checkout() {
 
               <div className="rounded-2xl border bg-white p-4 shadow-sm">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">Tạm tính</span>
+                  <span className="text-slate-500">
+                    {t("checkout.subtotal")}
+                  </span>
                   <span className="font-semibold">
                     {formatVnd(totals.total)}
                   </span>
                 </div>
                 <div className="mt-2 flex items-center justify-between text-sm">
-                  <span className="text-slate-500">Giảm giá</span>
+                  <span className="text-slate-500">
+                    {t("checkout.discount")}
+                  </span>
                   <span className="font-semibold text-emerald-600">
                     -{formatVnd(discountAmount)}
                   </span>
                 </div>
                 <div className="mt-3 flex items-center justify-between text-sm">
-                  <span className="text-slate-500">Phí vận chuyển</span>
-                  <span className="font-semibold">0đ</span>
+                  <span className="text-slate-500">
+                    {t("checkout.shippingFee")}
+                  </span>
+                  <span className="font-semibold">
+                    {t("checkout.shippingFeeFree")}
+                  </span>
                 </div>
                 <div className="mt-4 flex items-center justify-between">
                   <span className="text-sm font-semibold">
-                    Tổng số tiền (gồm VAT)
+                    {t("checkout.totalWithVat")}
                   </span>
                   <span className="text-2xl font-bold text-red-600">
                     {formatVnd(finalTotal)}
@@ -540,11 +567,10 @@ function Checkout() {
                   className="mt-4 w-full rounded-xl bg-red-600 py-3 text-sm font-semibold text-white"
                   onClick={placeOrder}
                 >
-                  Xác nhận thanh toán
+                  {t("checkout.confirmPayment")}
                 </button>
                 <div className="mt-2 text-xs text-slate-500">
-                  Bằng việc tiến hành mua hàng, bạn đã đồng ý với điều khoản &
-                  điều kiện của bookStore.
+                  {t("checkout.termsNote")}
                 </div>
               </div>
             </div>
