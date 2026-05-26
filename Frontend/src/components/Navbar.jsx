@@ -63,6 +63,72 @@ function Navbar() {
     window.dispatchEvent(new CustomEvent("auth:open", { detail: { tab } }));
   };
 
+  const renderSearchForm = (widthClassName) => (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        submitSearch();
+      }}
+    >
+      <label
+        className={`input input-bordered input-sm flex items-center gap-2 rounded-full ${widthClassName}`}
+      >
+        <input
+          type="text"
+          className="min-w-0 grow"
+          placeholder={t("nav.searchPlaceholder")}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <button
+          type="submit"
+          className="btn btn-ghost btn-xs"
+          aria-label={t("nav.search")}
+          title={t("nav.search")}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 16 16"
+            fill="currentColor"
+            className="w-4 h-4 opacity-70"
+          >
+            <path
+              fillRule="evenodd"
+              d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 0 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+      </label>
+    </form>
+  );
+
+  const cartLink = (
+    <Link
+      to="/cart"
+      className="btn btn-ghost btn-sm btn-circle"
+      aria-label={`${t("nav.cart")} (${totals.count})`}
+      title={`${t("nav.cart")} (${totals.count})`}
+    >
+      <div className="indicator">
+        {totals.count ? (
+          <span className="indicator-item badge badge-primary badge-sm">
+            {totals.count}
+          </span>
+        ) : null}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className="w-5 h-5"
+          aria-hidden="true"
+        >
+          <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2Zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2ZM7.17 14h9.66c.75 0 1.4-.41 1.74-1.03L21 6H6.21L5.27 4H2v2h2l3.6 7.59-1.35 2.44C5.52 17.37 6.48 19 8 19h12v-2H8l1.1-2Zm-.96-6h12.48l-1.62 4H8.11L6.21 8Z" />
+        </svg>
+      </div>
+    </Link>
+  );
+
   return (
     <div
       className={`fixed top-0 left-0 right-0 z-50 bg-base-100 text-base-content ${
@@ -98,8 +164,11 @@ function Navbar() {
               </div>
               <ul
                 tabIndex={0}
-                className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-56"
+                className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-72 max-w-[calc(100vw-1rem)]"
               >
+                <div className="px-1 pb-2">
+                  {renderSearchForm("w-full")}
+                </div>
                 {navItems}
               </ul>
             </div>
@@ -115,48 +184,14 @@ function Navbar() {
             </div>
           </div>
 
-          <div className="navbar-end gap-3 flex-none">
+          <div className="navbar-end gap-1 sm:gap-2 md:gap-3 flex-none">
             <div className="hidden md:flex lg:ml-4">
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  submitSearch();
-                }}
-              >
-                <label className="input input-bordered input-sm flex items-center gap-2 rounded-full w-36 md:w-40 lg:w-56 xl:w-72">
-                  <input
-                    type="text"
-                    className="grow"
-                    placeholder={t("nav.searchPlaceholder")}
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                  <button
-                    type="submit"
-                    className="btn btn-ghost btn-xs"
-                    aria-label={t("nav.search")}
-                    title={t("nav.search")}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 16 16"
-                      fill="currentColor"
-                      className="w-4 h-4 opacity-70"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 0 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </label>
-              </form>
+              {renderSearchForm("w-36 md:w-40 lg:w-56 xl:w-72")}
             </div>
 
             <button
               type="button"
-              className="btn btn-ghost btn-sm"
+              className="btn btn-ghost btn-sm hidden md:flex"
               onClick={toggleLang}
               aria-label={t("lang.toggle")}
               title={t("lang.toggle")}
@@ -174,7 +209,7 @@ function Navbar() {
               </span>
             </button>
 
-            <label className="btn btn-ghost btn-sm swap swap-rotate">
+            <label className="btn btn-ghost btn-sm swap swap-rotate hidden md:flex">
               <input
                 type="checkbox"
                 checked={theme === "dark"}
@@ -201,32 +236,11 @@ function Navbar() {
             </label>
 
             {authUser ? (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/cart"
-                  className="btn btn-ghost btn-sm btn-circle"
-                  aria-label={`${t("nav.cart")} (${totals.count})`}
-                  title={`${t("nav.cart")} (${totals.count})`}
-                >
-                  <div className="indicator">
-                    {totals.count ? (
-                      <span className="indicator-item badge badge-primary badge-sm">
-                        {totals.count}
-                      </span>
-                    ) : null}
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      className="w-5 h-5"
-                      aria-hidden="true"
-                    >
-                      <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2Zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2ZM7.17 14h9.66c.75 0 1.4-.41 1.74-1.03L21 6H6.21L5.27 4H2v2h2l3.6 7.59-1.35 2.44C5.52 17.37 6.48 19 8 19h12v-2H8l1.1-2Zm-.96-6h12.48l-1.62 4H8.11L6.21 8Z" />
-                    </svg>
-                  </div>
-                </Link>
-                {authUser?.role === "admin" ? (
-                  <div className="dropdown dropdown-end">
+              <>
+                {cartLink}
+                <div className="hidden md:flex items-center gap-2">
+                  {authUser?.role === "admin" ? (
+                    <div className="dropdown dropdown-end">
                     <label
                       tabIndex={0}
                       className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-full bg-base-200 cursor-pointer"
@@ -285,9 +299,9 @@ function Navbar() {
                         </Link>
                       </li>
                     </ul>
-                  </div>
-                ) : (
-                  <div className="dropdown dropdown-end">
+                    </div>
+                  ) : (
+                    <div className="dropdown dropdown-end">
                     <label
                       tabIndex={0}
                       className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-full bg-base-200 cursor-pointer"
@@ -331,24 +345,18 @@ function Navbar() {
                         </Link>
                       </li>
                     </ul>
-                  </div>
-                )}
-                <Logout />
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/cart"
-                  className="btn btn-ghost btn-sm btn-circle mr-2"
-                  aria-label={`${t("nav.cart")} (${totals.count})`}
-                  title={`${t("nav.cart")} (${totals.count})`}
-                >
-                  <div className="indicator">
-                    {totals.count ? (
-                      <span className="indicator-item badge badge-primary badge-sm">
-                        {totals.count}
-                      </span>
-                    ) : null}
+                    </div>
+                  )}
+                  <Logout />
+                </div>
+                <div className="dropdown dropdown-end md:hidden">
+                  <button
+                    type="button"
+                    tabIndex={0}
+                    className="btn btn-ghost btn-sm btn-circle"
+                    aria-label={authUser.fullname || authUser.email}
+                    title={authUser.fullname || authUser.email}
+                  >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"
@@ -356,29 +364,148 @@ function Navbar() {
                       className="w-5 h-5"
                       aria-hidden="true"
                     >
-                      <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2Zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2ZM7.17 14h9.66c.75 0 1.4-.41 1.74-1.03L21 6H6.21L5.27 4H2v2h2l3.6 7.59-1.35 2.44C5.52 17.37 6.48 19 8 19h12v-2H8l1.1-2Zm-.96-6h12.48l-1.62 4H8.11L6.21 8Z" />
+                      <path d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm-8 19a8 8 0 1 1 16 0H4Z" />
                     </svg>
-                  </div>
-                </Link>
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm whitespace-nowrap"
-                  onClick={() => openAuthModal("login")}
-                >
-                  {t("nav.login")}
-                </button>
-                <Link
-                  to="/signup"
-                  className="text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    openAuthModal("signup");
-                  }}
-                >
-                  {t("nav.register")}
-                </Link>
+                  </button>
+                  <ul
+                    tabIndex={0}
+                    className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-xl bg-base-100 rounded-2xl w-64 max-w-[calc(100vw-1rem)] border border-base-200"
+                  >
+                    <li className="menu-title max-w-full">
+                      <span className="truncate">
+                        {authUser.fullname || authUser.email}
+                      </span>
+                    </li>
+                    {authUser?.role === "admin" ? (
+                      <>
+                        <li>
+                          <Link to="/admin/books" className="rounded-xl">
+                            Quản lý sách
+                          </Link>
+                        </li>
+                        <li>
+                          <Link to="/admin/orders" className="rounded-xl">
+                            Quản lý đơn hàng
+                          </Link>
+                        </li>
+                        <li>
+                          <Link to="/admin/users" className="rounded-xl">
+                            Quản lý user
+                          </Link>
+                        </li>
+                        <li>
+                          <Link to="/admin/vouchers" className="rounded-xl">
+                            Quản lý voucher
+                          </Link>
+                        </li>
+                      </>
+                    ) : (
+                      <li>
+                        <Link to="/orders" className="rounded-xl">
+                          Đơn hàng của tôi
+                        </Link>
+                      </li>
+                    )}
+                    <li>
+                      <button type="button" onClick={toggleLang}>
+                        {t("lang.toggle")} ({lang.toUpperCase()})
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTheme(theme === "dark" ? "light" : "dark")
+                        }
+                      >
+                        {t("theme.toggle")}
+                      </button>
+                    </li>
+                    <li className="px-1 py-1">
+                      <Logout />
+                    </li>
+                  </ul>
+                </div>
+              </>
+            ) : (
+              <>
+                {cartLink}
+                <div className="hidden md:flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm whitespace-nowrap"
+                    onClick={() => openAuthModal("login")}
+                  >
+                    {t("nav.login")}
+                  </button>
+                  <Link
+                    to="/signup"
+                    className="text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      openAuthModal("signup");
+                    }}
+                  >
+                    {t("nav.register")}
+                  </Link>
+                </div>
+                <div className="dropdown dropdown-end md:hidden">
+                  <button
+                    type="button"
+                    tabIndex={0}
+                    className="btn btn-ghost btn-sm btn-circle"
+                    aria-label={t("nav.menu")}
+                    title={t("nav.menu")}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="w-5 h-5"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+                    </svg>
+                  </button>
+                  <ul
+                    tabIndex={0}
+                    className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-xl bg-base-100 rounded-2xl w-56 max-w-[calc(100vw-1rem)] border border-base-200"
+                  >
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => openAuthModal("login")}
+                      >
+                        {t("nav.login")}
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => openAuthModal("signup")}
+                      >
+                        {t("nav.register")}
+                      </button>
+                    </li>
+                    <li>
+                      <button type="button" onClick={toggleLang}>
+                        {t("lang.toggle")} ({lang.toUpperCase()})
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTheme(theme === "dark" ? "light" : "dark")
+                        }
+                      >
+                        {t("theme.toggle")}
+                      </button>
+                    </li>
+                  </ul>
+                </div>
                 <Login />
-              </div>
+              </>
             )}
           </div>
         </div>
