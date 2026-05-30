@@ -5,6 +5,8 @@ import Book from "../model/book.model.js";
 import Voucher from "../model/voucher.model.js";
 
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+const VNPAY_TIME_ZONE = "Asia/Ho_Chi_Minh";
+const VNPAY_EXPIRATION_MINUTES = 15;
 
 const getVnpayConfig = () => {
   const tmnCode = String(process.env.VNPAY_TMN_CODE || "").trim();
@@ -28,15 +30,21 @@ const getVnpayConfig = () => {
 };
 
 const formatVnpDate = (date = new Date()) => {
-  const pad = (n) => String(n).padStart(2, "0");
-  return (
-    date.getFullYear() +
-    pad(date.getMonth() + 1) +
-    pad(date.getDate()) +
-    pad(date.getHours()) +
-    pad(date.getMinutes()) +
-    pad(date.getSeconds())
-  );
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: VNPAY_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const getPart = (type) =>
+    parts.find((part) => part.type === type)?.value || "00";
+  return `${getPart("year")}${getPart("month")}${getPart("day")}${getPart(
+    "hour",
+  )}${getPart("minute")}${getPart("second")}`;
 };
 
 const sortVnpParams = (params) => {
@@ -160,7 +168,9 @@ const createVnpayPaymentUrl = (order, req) => {
     vnp_ReturnUrl: config.returnUrl,
     vnp_IpAddr: getClientIp(req),
     vnp_CreateDate: formatVnpDate(now),
-    vnp_ExpireDate: formatVnpDate(new Date(now.getTime() + 15 * 60 * 1000)),
+    vnp_ExpireDate: formatVnpDate(
+      new Date(now.getTime() + VNPAY_EXPIRATION_MINUTES * 60 * 1000),
+    ),
   };
 
   const signed = signVnpParams(params, config.hashSecret);
