@@ -202,7 +202,7 @@ function BookDetail() {
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
           fill="currentColor"
-          className={`${size} ${index + 1 <= Math.round(value) ? "text-accent" : "text-line"}`}
+          className={`${size} ${index + 1 <= Math.round(value) ? "text-star" : "text-line"}`}
         >
           <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
         </svg>
@@ -300,7 +300,7 @@ function BookDetail() {
                   </div>
 
                   <div className="mt-8 flex flex-wrap items-baseline gap-3 border-t border-line pt-8">
-                    <span className="font-display text-4xl font-medium">
+                    <span className="font-display text-4xl font-semibold text-price">
                       {Number(book.price || 0).toLocaleString("vi-VN")}đ
                     </span>
                     {hasDiscount ? (
@@ -429,7 +429,7 @@ function BookDetail() {
                             </span>
                             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-line">
                               <div
-                                className="h-full rounded-full bg-accent"
+                                className="h-full rounded-full bg-star"
                                 style={{ width: `${percent}%` }}
                               />
                             </div>
@@ -492,7 +492,7 @@ function BookDetail() {
                                   xmlns="http://www.w3.org/2000/svg"
                                   viewBox="0 0 24 24"
                                   fill="currentColor"
-                                  className={`h-7 w-7 ${index + 1 <= ratingInput ? "text-accent" : "text-line"}`}
+                                  className={`h-7 w-7 ${index + 1 <= ratingInput ? "text-star" : "text-line"}`}
                                 >
                                   <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                                 </svg>

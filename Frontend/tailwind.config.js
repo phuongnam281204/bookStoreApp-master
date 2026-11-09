@@ -15,6 +15,8 @@ export default {
                 accent: token("accent"),
                 "accent-ink": token("accent-ink"),
                 sale: token("sale"),
+                price: token("price"),
+                star: token("star"),
             },
             fontFamily: {
                 display: ['"Newsreader"', "Georgia", "serif"],

@@ -194,7 +194,7 @@ function Home() {
                             </span>
                           ) : null}
                         </span>
-                        <span className="text-sm font-semibold">
+                        <span className="text-sm font-bold text-price">
                           {formatVnd(item.price)}
                         </span>
                       </Link>

@@ -19,6 +19,8 @@
   --accent: 122 74 44; /* #7a4a2c */
   --accent-ink: 255 255 255;
   --sale: 158 52 34; /* price cut only */
+  --price: 196 32 38; /* #c42026 — every book price */
+  --star: 245 166 35; /* #f5a623 — rating stars */
 }
 
 :root.dark {
@@ -30,6 +32,8 @@
   --accent: 201 145 106;
   --accent-ink: 28 25 22;
   --sale: 232 128 104;
+  --price: 255 128 112;
+  --star: 251 191 36;
 }
 
 html {

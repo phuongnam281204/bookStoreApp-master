@@ -72,7 +72,7 @@ function Cards({ item, variant = "grid" }) {
 
   const priceBlock = (
     <div className="flex flex-wrap items-baseline gap-x-2">
-      <span className="font-semibold">{formatVnd(price)}</span>
+      <span className="text-lg font-bold text-price">{formatVnd(price)}</span>
       {hasDiscount ? (
         <>
           <span className="text-sm text-muted line-through">
@@ -89,7 +89,7 @@ function Cards({ item, variant = "grid" }) {
   const ratingLine =
     ratingCount > 0 ? (
       <p className="text-xs text-muted">
-        <span aria-hidden="true" className="text-accent">
+        <span aria-hidden="true" className="text-star">
           ★
         </span>{" "}
         {rating.toFixed(1)}

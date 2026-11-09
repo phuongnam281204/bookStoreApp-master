@@ -104,7 +104,7 @@ function Cart() {
                         </button>
                       </div>
 
-                      <span className="w-28 text-right font-semibold">
+                      <span className="w-28 text-right font-bold text-price">
                         {formatVnd(x.price * x.qty)}
                       </span>
 
