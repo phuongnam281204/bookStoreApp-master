@@ -36,3 +36,7 @@ Backend/Frontend/
 
 # Uploaded files
 Backend/uploads/
+
+# Local AI / design tooling (caches, screenshots, skills)
+.claude/
+Frontend/.taste-skill/
