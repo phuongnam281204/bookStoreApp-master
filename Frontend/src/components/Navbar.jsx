@@ -336,6 +336,11 @@ function Navbar() {
                       className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-xl bg-base-100 rounded-2xl w-52 border border-base-200"
                     >
                       <li>
+                        <Link to="/admin" className="rounded-xl">
+                          Tổng quan quản trị
+                        </Link>
+                      </li>
+                      <li>
                         <Link to="/admin/books" className="rounded-xl">
                           Quản lý sách
                         </Link>
@@ -438,6 +443,11 @@ function Navbar() {
                     </li>
                     {authUser?.role === "admin" ? (
                       <>
+                        <li>
+                          <Link to="/admin" className="rounded-xl">
+                            Tổng quan quản trị
+                          </Link>
+                        </li>
                         <li>
                           <Link to="/admin/books" className="rounded-xl">
                             Quản lý sách

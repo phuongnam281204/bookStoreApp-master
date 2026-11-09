@@ -1,27 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import AdminLayout, {
+  EmptyState,
+  LoadingRows,
+  PageHeader,
+  Pill,
+  errorMessage,
+  formatDateTime,
+  formatVnd,
+  orderStatusMeta,
+  paymentStatusMeta,
+} from "./AdminLayout";
 
-const formatVnd = (value) =>
-  new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(value || 0);
-
-const statusLabel = (status) => {
-  if (status === "paid") return "Đã thanh toán";
-  if (status === "cancelled") return "Đã hủy";
-  return "Đã đặt";
-};
-
-const paymentLabel = (status) => {
-  if (status === "paid") return "Đã thanh toán";
-  if (status === "pending") return "Đang xử lý";
-  if (status === "failed") return "Thất bại";
-  return "Chưa thanh toán";
-};
+const filters = [
+  { id: "all", label: "Tất cả" },
+  { id: "placed", label: "Đã đặt" },
+  { id: "paid", label: "Đã thanh toán" },
+  { id: "cancelled", label: "Đã hủy" },
+];
 
 function OrdersAdmin() {
   const [orders, setOrders] = useState([]);
@@ -29,6 +26,7 @@ function OrdersAdmin() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState(null);
+  const [openId, setOpenId] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -36,9 +34,7 @@ function OrdersAdmin() {
       const res = await axios.get("/order", { withCredentials: true });
       setOrders(res.data || []);
     } catch (err) {
-      const message =
-        err?.response?.data?.message || err?.message || "Không tải được";
-      toast.error(message);
+      toast.error(errorMessage(err, "Không tải được"));
     } finally {
       setLoading(false);
     }
@@ -47,6 +43,12 @@ function OrdersAdmin() {
   useEffect(() => {
     load();
   }, []);
+
+  const counts = useMemo(() => {
+    const c = { all: orders.length, placed: 0, paid: 0, cancelled: 0 };
+    for (const o of orders) if (c[o.status] !== undefined) c[o.status] += 1;
+    return c;
+  }, [orders]);
 
   const filteredOrders = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -61,11 +63,7 @@ function OrdersAdmin() {
         order.userId?.email || order.shippingAddress?.email || "",
       ).toLowerCase();
       const id = String(order._id || "").toLowerCase();
-      return (
-        name.includes(keyword) ||
-        email.includes(keyword) ||
-        id.includes(keyword)
-      );
+      return name.includes(keyword) || email.includes(keyword) || id.includes(keyword);
     });
   }, [orders, filter, search]);
 
@@ -81,9 +79,7 @@ function OrdersAdmin() {
       toast.success("Đã cập nhật thanh toán");
       await load();
     } catch (err) {
-      const message =
-        err?.response?.data?.message || err?.message || "Cập nhật thất bại";
-      toast.error(message);
+      toast.error(errorMessage(err, "Cập nhật thất bại"));
     } finally {
       setBusyId(null);
     }
@@ -94,175 +90,204 @@ function OrdersAdmin() {
     if (!confirm("Hủy đơn hàng này?")) return;
     setBusyId(orderId);
     try {
-      await axios.post(
-        `/order/${orderId}/cancel`,
-        {},
-        { withCredentials: true },
-      );
+      await axios.post(`/order/${orderId}/cancel`, {}, { withCredentials: true });
       toast.success("Đã hủy đơn");
       await load();
     } catch (err) {
-      const message =
-        err?.response?.data?.message || err?.message || "Hủy đơn thất bại";
-      toast.error(message);
+      toast.error(errorMessage(err, "Hủy đơn thất bại"));
     } finally {
       setBusyId(null);
     }
   };
 
   return (
-    <>
-      <Navbar />
-      <div className="max-w-screen-2xl container mx-auto md:px-20 px-4 min-h-screen pt-28 pb-16">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Admin: Orders</h1>
-            <p className="mt-1 text-sm opacity-70">
-              Quản lý đơn hàng và trạng thái thanh toán.
-            </p>
-          </div>
-          <button
-            className="px-4 py-2 rounded-md border dark:border-slate-700"
-            onClick={load}
-          >
+    <AdminLayout>
+      <PageHeader
+        title="Đơn hàng"
+        description="Theo dõi đơn và xác nhận thanh toán."
+        actions={
+          <button className="btn-xs-line" onClick={load} disabled={loading}>
             Tải lại
           </button>
+        }
+      />
+
+      <div className="mt-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="hide-scrollbar flex gap-1 overflow-x-auto" role="tablist">
+          {filters.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              role="tab"
+              aria-selected={filter === f.id}
+              onClick={() => setFilter(f.id)}
+              className={`flex h-9 shrink-0 items-center gap-2 rounded-md px-3.5 text-sm transition-colors ${
+                filter === f.id
+                  ? "bg-ink text-paper"
+                  : "text-muted hover:bg-ink/5 hover:text-ink"
+              }`}
+            >
+              {f.label}
+              <span
+                className={`rounded px-1.5 text-xs tabular-nums ${
+                  filter === f.id ? "bg-paper/20" : "bg-ink/[0.07]"
+                }`}
+              >
+                {counts[f.id]}
+              </span>
+            </button>
+          ))}
         </div>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Tìm theo tên, email, mã đơn"
+          className="field lg:max-w-xs"
+          aria-label="Tìm đơn hàng"
+        />
+      </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-[1fr_240px]">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm theo tên, email, mã đơn"
-            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-          />
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-          >
-            <option value="all">Tất cả trạng thái</option>
-            <option value="placed">Đã đặt</option>
-            <option value="paid">Đã thanh toán</option>
-            <option value="cancelled">Đã hủy</option>
-          </select>
-        </div>
+      <div className="mt-6">
+        {loading ? (
+          <LoadingRows />
+        ) : !filteredOrders.length ? (
+          <EmptyState title="Không có đơn hàng" hint="Thử đổi bộ lọc hoặc từ khóa." />
+        ) : (
+          <div className="panel overflow-x-auto">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Mã đơn</th>
+                  <th>Khách hàng</th>
+                  <th>Thời gian</th>
+                  <th>Trạng thái</th>
+                  <th>Thanh toán</th>
+                  <th className="!text-right">Tổng</th>
+                  <th className="!text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOrders.map((order) => {
+                  const isCancelled = order.status === "cancelled";
+                  const isPaid = order.paymentStatus === "paid";
+                  const canAct = !isPaid && !isCancelled;
+                  const busy = busyId === order._id;
+                  const isOpen = openId === order._id;
+                  const st = orderStatusMeta(order.status);
+                  const pay = paymentStatusMeta(order.paymentStatus);
+                  const customerName =
+                    order.userId?.fullname || order.shippingAddress?.fullName || "Khách hàng";
+                  const customerEmail =
+                    order.userId?.email || order.shippingAddress?.email || "";
 
-        <div className="mt-6">
-          {loading ? (
-            <p>Loading...</p>
-          ) : !filteredOrders.length ? (
-            <div className="rounded-2xl border border-dashed p-8 text-center">
-              Chưa có đơn hàng.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredOrders.map((order) => {
-                const isCancelled = order.status === "cancelled";
-                const isPaid = order.paymentStatus === "paid";
-                const canMarkPaid = !isPaid && !isCancelled;
-                const canCancel = !isCancelled && !isPaid;
-                const customerName =
-                  order.userId?.fullname ||
-                  order.shippingAddress?.fullName ||
-                  "";
-                const customerEmail =
-                  order.userId?.email || order.shippingAddress?.email || "";
-
-                return (
-                  <div
-                    key={order._id}
-                    className="rounded-2xl border bg-white p-5 shadow-sm dark:bg-slate-900 dark:border-slate-700"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div>
-                        <div className="text-sm text-slate-500">
-                          Mã đơn:{" "}
-                          <span className="font-semibold">
-                            #{String(order._id).slice(-6)}
+                  return [
+                    <tr key={order._id} className={isOpen ? "bg-ink/[0.03]" : ""}>
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => setOpenId(isOpen ? null : order._id)}
+                          aria-expanded={isOpen}
+                          className="flex items-center gap-2 font-mono text-xs text-muted hover:text-ink"
+                        >
+                          <span
+                            className={`inline-block transition-transform ${isOpen ? "rotate-90" : ""}`}
+                            aria-hidden="true"
+                          >
+                            ›
+                          </span>
+                          #{String(order._id).slice(-6).toUpperCase()}
+                        </button>
+                      </td>
+                      <td>
+                        <p className="font-medium">{customerName}</p>
+                        {customerEmail ? (
+                          <p className="text-xs text-muted">{customerEmail}</p>
+                        ) : null}
+                      </td>
+                      <td className="whitespace-nowrap text-muted">
+                        {formatDateTime(order.createdAt)}
+                      </td>
+                      <td>
+                        <Pill tone={st.tone}>{st.label}</Pill>
+                      </td>
+                      <td>
+                        <div className="flex flex-col items-start gap-1">
+                          <Pill tone={pay.tone}>{pay.label}</Pill>
+                          <span className="text-[11px] uppercase tracking-wide text-muted">
+                            {order.paymentMethod}
                           </span>
                         </div>
-                        <div className="mt-2 text-lg font-semibold">
-                          {customerName || "Khách hàng"}
-                        </div>
-                        {customerEmail ? (
-                          <div className="text-sm text-slate-500">
-                            {customerEmail}
-                          </div>
-                        ) : null}
-                        <div className="mt-2 text-sm text-slate-500">
-                          {order.createdAt
-                            ? new Date(order.createdAt).toLocaleString("vi-VN")
-                            : ""}
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        <div className="text-lg font-semibold text-rose-600">
-                          {formatVnd(order.total)}
-                        </div>
-                        <div className="mt-1 text-sm text-slate-500">
-                          {order.paymentMethod} •{" "}
-                          {paymentLabel(order.paymentStatus)}
-                        </div>
-                        <div className="mt-2 inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                          {statusLabel(order.status)}
-                        </div>
-                      </div>
-                    </div>
-
-                    <details className="mt-4">
-                      <summary className="cursor-pointer text-sm font-semibold text-slate-600">
-                        Xem chi tiết sản phẩm
-                      </summary>
-                      <div className="mt-3 grid gap-2 text-sm text-slate-600">
-                        {order.items?.map((item) => (
-                          <div
-                            key={`${order._id}-${item.bookId}`}
-                            className="flex justify-between"
+                      </td>
+                      <td className="whitespace-nowrap text-right font-medium tabular-nums">
+                        {formatVnd(order.total)}
+                      </td>
+                      <td>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            className="btn-xs-solid"
+                            onClick={() => markPaid(order._id)}
+                            disabled={!canAct || busy}
+                            title="Xác nhận đã thanh toán"
                           >
-                            <span>{item.name}</span>
-                            <span>
-                              {item.qty} x {formatVnd(item.price)}
-                            </span>
+                            Đã thu tiền
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-xs-danger"
+                            onClick={() => cancelOrder(order._id)}
+                            disabled={!canAct || busy}
+                          >
+                            Hủy
+                          </button>
+                        </div>
+                      </td>
+                    </tr>,
+                    isOpen ? (
+                      <tr key={`${order._id}-detail`} className="bg-ink/[0.03] hover:bg-ink/[0.03]">
+                        <td colSpan={7} className="!pt-0">
+                          <div className="grid gap-6 rounded-md border border-line bg-paper p-4 md:grid-cols-[1fr_260px]">
+                            <div>
+                              <p className="field-label">Sản phẩm</p>
+                              <ul className="divide-y divide-line/70">
+                                {order.items?.map((item) => (
+                                  <li
+                                    key={`${order._id}-${item.bookId}`}
+                                    className="flex justify-between gap-4 py-1.5"
+                                  >
+                                    <span>{item.name}</span>
+                                    <span className="whitespace-nowrap tabular-nums text-muted">
+                                      {item.qty} × {formatVnd(item.price)}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            <div>
+                              <p className="field-label">Giao tới</p>
+                              <p>{order.shippingAddress?.fullName || customerName}</p>
+                              {order.shippingAddress?.phone ? (
+                                <p className="text-muted">{order.shippingAddress.phone}</p>
+                              ) : null}
+                              <p className="text-muted">
+                                {order.shippingAddress?.addressLine || "—"}
+                                {order.shippingAddress?.city
+                                  ? `, ${order.shippingAddress.city}`
+                                  : ""}
+                              </p>
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                      <div className="mt-3 text-sm text-slate-500">
-                        Địa chỉ: {order.shippingAddress?.addressLine || "-"}
-                        {order.shippingAddress?.city
-                          ? `, ${order.shippingAddress.city}`
-                          : ""}
-                      </div>
-                    </details>
-
-                    <div className="mt-4 flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        className="px-3 py-2 rounded-md bg-emerald-500 text-white disabled:opacity-50"
-                        onClick={() => markPaid(order._id)}
-                        disabled={!canMarkPaid || busyId === order._id}
-                      >
-                        Xác nhận đã thanh toán
-                      </button>
-                      <button
-                        type="button"
-                        className="px-3 py-2 rounded-md border border-rose-500 text-rose-600 disabled:opacity-50"
-                        onClick={() => cancelOrder(order._id)}
-                        disabled={!canCancel || busyId === order._id}
-                      >
-                        Hủy đơn
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                        </td>
+                      </tr>
+                    ) : null,
+                  ];
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-      <Footer />
-    </>
+    </AdminLayout>
   );
 }
 

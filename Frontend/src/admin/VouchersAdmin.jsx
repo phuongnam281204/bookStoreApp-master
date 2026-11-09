@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
 import axios from "axios";
 import toast from "react-hot-toast";
+import AdminLayout, { EmptyState, LoadingRows, PageHeader, Pill } from "./AdminLayout";
 
 const emptyForm = {
   code: "",
@@ -122,7 +121,7 @@ function VouchersAdmin() {
       usageLimit: voucher.usageLimit ?? "",
       active: Boolean(voucher.active),
     });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.getElementById("voucher-code")?.focus();
   };
 
   const remove = async (id) => {
@@ -138,136 +137,187 @@ function VouchersAdmin() {
     }
   };
 
+  const isExpired = (v) => v.expiresAt && new Date(v.expiresAt) < new Date();
+  const isUsedUp = (v) => v.usageLimit && (v.usedCount || 0) >= v.usageLimit;
+  const voucherState = (v) => {
+    if (!v.active) return { label: "Tắt", tone: "neutral" };
+    if (isExpired(v)) return { label: "Hết hạn", tone: "bad" };
+    if (isUsedUp(v)) return { label: "Hết lượt", tone: "warn" };
+    return { label: "Đang chạy", tone: "good" };
+  };
+
   return (
-    <>
-      <Navbar />
-      <div className="max-w-screen-2xl container mx-auto md:px-20 px-4 min-h-screen pt-28 pb-16">
-        <h1 className="text-2xl font-bold">Admin: Mã giảm giá</h1>
+    <AdminLayout>
+      <PageHeader
+        title="Mã giảm giá"
+        description={`${vouchers.length} mã · ${
+          vouchers.filter((v) => voucherState(v).tone === "good").length
+        } đang chạy`}
+      />
 
-        <form
-          onSubmit={submit}
-          className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4"
-        >
-          <input
-            value={form.code}
-            onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
-            placeholder="Mã giảm giá"
-            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-            required
-          />
-          <input
-            value={form.discountPercent}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, discountPercent: e.target.value }))
-            }
-            placeholder="Phần trăm giảm"
-            type="number"
-            min={0}
-            max={100}
-            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-            required
-          />
-          <input
-            value={form.expiresAt}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, expiresAt: e.target.value }))
-            }
-            placeholder="Ngày hết hạn"
-            type="date"
-            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-          />
-          <input
-            value={form.usageLimit}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, usageLimit: e.target.value }))
-            }
-            placeholder="Giới hạn sử dụng"
-            type="number"
-            min={1}
-            className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-          />
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={form.active}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, active: e.target.checked }))
-              }
-            />
-            Kích hoạt
-          </label>
-
-          <div className="flex gap-3 md:col-span-2">
-            <button className="px-4 py-2 bg-pink-500 text-white rounded-md">
-              {editingId ? "Cập nhật" : "Tạo mới"}
-            </button>
-            {editingId ? (
-              <button
-                type="button"
-                className="px-4 py-2 border rounded-md dark:border-slate-700"
-                onClick={resetForm}
-              >
-                Hủy
-              </button>
-            ) : null}
-          </div>
-        </form>
-
-        <div className="mt-10">
+      <div className="mt-6 grid items-start gap-6 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="order-2 min-w-0 lg:order-1">
           {loading ? (
-            <p>Đang tải...</p>
+            <LoadingRows />
           ) : !vouchers.length ? (
-            <div className="rounded-2xl border border-dashed p-8 text-center">
-              Chưa có mã giảm giá.
-            </div>
+            <EmptyState
+              title="Chưa có mã giảm giá"
+              hint="Tạo mã đầu tiên ở khung bên cạnh."
+            />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="table">
+            <div className="panel overflow-x-auto">
+              <table className="admin-table">
                 <thead>
                   <tr>
                     <th>Mã</th>
-                    <th>Giảm</th>
+                    <th className="!text-right">Giảm</th>
                     <th>Hết hạn</th>
-                    <th>Đã dùng</th>
-                    <th>Kích hoạt</th>
-                    <th></th>
+                    <th>Lượt dùng</th>
+                    <th>Trạng thái</th>
+                    <th className="!text-right">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {vouchers.map((v) => (
-                    <tr key={v._id}>
-                      <td>{v.code}</td>
-                      <td>{Number(v.discountPercent || 0)}%</td>
-                      <td>{formatDate(v.expiresAt) || "-"}</td>
-                      <td>
-                        {v.usedCount || 0}
-                        {v.usageLimit ? ` / ${v.usageLimit}` : ""}
-                      </td>
-                      <td>{v.active ? "Bật" : "Tắt"}</td>
-                      <td className="flex gap-2">
-                        <button
-                          className="px-3 py-1 border rounded-md dark:border-slate-700"
-                          onClick={() => startEdit(v)}
-                        >
-                          Sửa
-                        </button>
-                        <button
-                          className="px-3 py-1 bg-red-500 text-white rounded-md"
-                          onClick={() => remove(v._id)}
-                        >
-                          Xóa
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {vouchers.map((v) => {
+                    const st = voucherState(v);
+                    const used = v.usedCount || 0;
+                    const pct = v.usageLimit
+                      ? Math.min(100, Math.round((used / v.usageLimit) * 100))
+                      : null;
+                    return (
+                      <tr key={v._id} className={editingId === v._id ? "bg-accent/5" : ""}>
+                        <td>
+                          <span className="rounded border border-dashed border-ink/30 px-2 py-0.5 font-mono text-xs font-semibold tracking-wider">
+                            {v.code}
+                          </span>
+                        </td>
+                        <td className="text-right font-display text-lg tabular-nums">
+                          {Number(v.discountPercent || 0)}%
+                        </td>
+                        <td className="whitespace-nowrap text-muted">
+                          {formatDate(v.expiresAt) || "Không hạn"}
+                        </td>
+                        <td className="min-w-[120px]">
+                          <p className="text-xs tabular-nums">
+                            {used}
+                            {v.usageLimit ? ` / ${v.usageLimit}` : " · không giới hạn"}
+                          </p>
+                          {pct !== null ? (
+                            <div className="mt-1.5 h-1 w-full rounded-full bg-ink/10">
+                              <div
+                                className="h-1 rounded-full bg-accent"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          ) : null}
+                        </td>
+                        <td>
+                          <Pill tone={st.tone}>{st.label}</Pill>
+                        </td>
+                        <td>
+                          <div className="flex justify-end gap-2">
+                            <button className="btn-xs-line" onClick={() => startEdit(v)}>
+                              Sửa
+                            </button>
+                            <button className="btn-xs-danger" onClick={() => remove(v._id)}>
+                              Xóa
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
         </div>
+
+        <form
+          onSubmit={submit}
+          className="panel order-1 space-y-4 p-5 lg:sticky lg:top-10 lg:order-2"
+        >
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-lg font-medium">
+              {editingId ? "Sửa mã" : "Tạo mã mới"}
+            </h2>
+            {editingId ? (
+              <button type="button" className="text-xs text-muted hover:text-ink" onClick={resetForm}>
+                Hủy sửa
+              </button>
+            ) : null}
+          </div>
+          <div>
+            <label className="field-label" htmlFor="voucher-code">
+              Mã
+            </label>
+            <input
+              id="voucher-code"
+              value={form.code}
+              onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
+              placeholder="VD: SACHMOI10"
+              className="field font-mono uppercase tracking-wider"
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="field-label" htmlFor="voucher-pct">
+                Giảm (%)
+              </label>
+              <input
+                id="voucher-pct"
+                value={form.discountPercent}
+                onChange={(e) => setForm((f) => ({ ...f, discountPercent: e.target.value }))}
+                type="number"
+                min={0}
+                max={100}
+                className="field"
+                required
+              />
+            </div>
+            <div>
+              <label className="field-label" htmlFor="voucher-limit">
+                Giới hạn lượt
+              </label>
+              <input
+                id="voucher-limit"
+                value={form.usageLimit}
+                onChange={(e) => setForm((f) => ({ ...f, usageLimit: e.target.value }))}
+                placeholder="Không giới hạn"
+                type="number"
+                min={1}
+                className="field"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="field-label" htmlFor="voucher-exp">
+              Ngày hết hạn
+            </label>
+            <input
+              id="voucher-exp"
+              value={form.expiresAt}
+              onChange={(e) => setForm((f) => ({ ...f, expiresAt: e.target.value }))}
+              type="date"
+              className="field"
+            />
+          </div>
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="checkbox checkbox-sm checkbox-primary"
+              checked={form.active}
+              onChange={(e) => setForm((f) => ({ ...f, active: e.target.checked }))}
+            />
+            Kích hoạt ngay
+          </label>
+          <button className="btn-xs-solid w-full">
+            {editingId ? "Lưu thay đổi" : "Tạo mã"}
+          </button>
+        </form>
       </div>
-      <Footer />
-    </>
+    </AdminLayout>
   );
 }
 

@@ -10,6 +10,7 @@ import BooksAdmin from "./admin/BooksAdmin";
 import OrdersAdmin from "./admin/OrdersAdmin";
 import UsersAdmin from "./admin/UsersAdmin";
 import VouchersAdmin from "./admin/VouchersAdmin";
+import AdminDashboard from "./admin/AdminDashboard";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import BookDetail from "./pages/BookDetail";
@@ -21,6 +22,14 @@ import Leaderboard from "./pages/Leaderboard";
 
 function App() {
   const [authUser] = useAuth();
+  const admin = (page) =>
+    !authUser ? (
+      <Navigate to="/signup" />
+    ) : authUser.role === "admin" ? (
+      page
+    ) : (
+      <Navigate to="/" />
+    );
   const location = useLocation();
 
   // A new page starts at its top; a hash link (#reviews) still jumps to its anchor.
@@ -51,54 +60,11 @@ function App() {
               }
             />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route
-              path="/admin/books"
-              element={
-                !authUser ? (
-                  <Navigate to="/signup" />
-                ) : authUser.role === "admin" ? (
-                  <BooksAdmin />
-                ) : (
-                  <Navigate to="/" />
-                )
-              }
-            />
-            <Route
-              path="/admin/users"
-              element={
-                !authUser ? (
-                  <Navigate to="/signup" />
-                ) : authUser.role === "admin" ? (
-                  <UsersAdmin />
-                ) : (
-                  <Navigate to="/" />
-                )
-              }
-            />
-            <Route
-              path="/admin/orders"
-              element={
-                !authUser ? (
-                  <Navigate to="/signup" />
-                ) : authUser.role === "admin" ? (
-                  <OrdersAdmin />
-                ) : (
-                  <Navigate to="/" />
-                )
-              }
-            />
-            <Route
-              path="/admin/vouchers"
-              element={
-                !authUser ? (
-                  <Navigate to="/signup" />
-                ) : authUser.role === "admin" ? (
-                  <VouchersAdmin />
-                ) : (
-                  <Navigate to="/" />
-                )
-              }
-            />
+            <Route path="/admin" element={admin(<AdminDashboard />)} />
+            <Route path="/admin/books" element={admin(<BooksAdmin />)} />
+            <Route path="/admin/users" element={admin(<UsersAdmin />)} />
+            <Route path="/admin/orders" element={admin(<OrdersAdmin />)} />
+            <Route path="/admin/vouchers" element={admin(<VouchersAdmin />)} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/signup" element={<Signup />} />

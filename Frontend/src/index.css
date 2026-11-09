@@ -84,6 +84,43 @@ h3,
   .btn-line:active {
     transform: translateY(1px);
   }
+  /* Admin: compact controls, one field style, one table style. */
+  .btn-xs-solid {
+    @apply inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-accent px-3.5 text-sm font-semibold text-accent-ink transition duration-150 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-xs-line {
+    @apply inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-line bg-paper px-3.5 text-sm font-medium text-ink transition duration-150 hover:border-ink/40 hover:bg-ink/5 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-xs-danger {
+    @apply inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-sale/40 px-3.5 text-sm font-medium text-sale transition duration-150 hover:bg-sale/10 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .field {
+    @apply h-10 w-full rounded-md border border-line bg-paper px-3 text-sm text-ink outline-none transition placeholder:text-muted/80 focus:border-accent focus:ring-2 focus:ring-accent/20;
+  }
+  textarea.field {
+    @apply h-auto py-2;
+  }
+  .field-label {
+    @apply mb-1.5 block text-xs font-medium text-muted;
+  }
+  .panel {
+    @apply rounded-lg border border-line bg-surface/40;
+  }
+  .admin-table {
+    @apply w-full border-collapse text-sm;
+  }
+  .admin-table th {
+    @apply whitespace-nowrap border-b border-line px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted;
+  }
+  .admin-table td {
+    @apply border-b border-line/70 px-4 py-3 align-middle;
+  }
+  .admin-table tbody tr {
+    @apply transition-colors hover:bg-ink/[0.03];
+  }
+  .admin-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
   .link-draw {
     background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px
       no-repeat;

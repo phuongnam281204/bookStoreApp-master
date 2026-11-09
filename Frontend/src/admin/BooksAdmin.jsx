@@ -1,9 +1,15 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
 import axios from "axios";
 import toast from "react-hot-toast";
+import AdminLayout, {
+  EmptyState,
+  LoadingRows,
+  Modal,
+  PageHeader,
+  Pill,
+  formatDateTime,
+  formatVnd,
+} from "./AdminLayout";
 
 const emptyForm = {
   name: "",
@@ -89,6 +95,13 @@ const getStockMeta = (book) => {
   };
 };
 
+const Thumb = ({ src }) =>
+  src ? (
+    <img src={src} alt="" loading="lazy" className="h-12 w-9 shrink-0 rounded-sm object-cover shadow-sm" />
+  ) : (
+    <div className="h-12 w-9 shrink-0 rounded-sm bg-ink/10" />
+  );
+
 function BooksAdmin() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -119,10 +132,7 @@ function BooksAdmin() {
     category: "",
     isHidden: "",
   });
-  const [summary, setSummary] = useState(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
   const genresDropdownRef = useRef(null);
-  const modalRoot = typeof document !== "undefined" ? document.body : null;
 
   const dynamicCategories = useMemo(() => {
     const list = books
@@ -158,27 +168,7 @@ function BooksAdmin() {
     }
   };
 
-  const loadSummary = async () => {
-    setSummaryLoading(true);
-    try {
-      const res = await axios.get("/order/admin/summary", {
-        withCredentials: true,
-      });
-      setSummary(res.data || null);
-    } catch (err) {
-      const message =
-        err?.response?.data?.message || err?.message || "Failed to load";
-      toast.error(message);
-    } finally {
-      setSummaryLoading(false);
-    }
-  };
-
   useEffect(() => {
-    if (activeTab === "dashboard") {
-      loadSummary();
-      return;
-    }
     load();
   }, [
     activeTab,
@@ -544,988 +534,708 @@ function BooksAdmin() {
     return ids;
   }, [seriesRows]);
 
-  const renderStockCell = (meta) => {
-    const badge = meta.isOut ? "Hết hàng" : meta.isLow ? "Sắp hết" : "Ổn";
-    const badgeClass = meta.isOut
-      ? "bg-rose-500 text-white"
-      : meta.isLow
-        ? "bg-amber-200 text-amber-900"
-        : "bg-emerald-100 text-emerald-700";
-    const barClass = meta.isOut
-      ? "bg-rose-500"
-      : meta.isLow
-        ? "bg-amber-500"
-        : "bg-emerald-500";
+  const setField = (key) => (e) =>
+    setForm((f) => ({ ...f, [key]: e.target.value }));
 
+  const closeForm = () => {
+    setShowFormModal(false);
+    setEditingId(null);
+    setForm(emptyForm);
+  };
+
+  const logBook = books.find((b) => b._id === selectedLogBookId);
+
+  const renderStock = (meta) => {
+    const tone = meta.isOut ? "bad" : meta.isLow ? "warn" : "good";
+    const bar = meta.isOut ? "bg-sale" : meta.isLow ? "bg-amber-500" : "bg-emerald-600";
     return (
-      <div className="min-w-[220px]">
-        <div className="flex items-center gap-2 text-xs">
-          <span className="font-semibold">Tồn:</span> {meta.stock}
-          <span className="font-semibold">Đặt:</span> {meta.reserved}
-          <span className="font-semibold">Còn:</span> {meta.available}
+      <div className="min-w-[170px]">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-medium tabular-nums">Còn {meta.available}</span>
+          <Pill tone={tone}>{meta.isOut ? "Hết hàng" : meta.isLow ? "Sắp hết" : "Ổn"}</Pill>
         </div>
-        <div className="mt-2 h-2 w-full rounded-full bg-slate-200">
-          <div
-            className={`h-2 rounded-full ${barClass}`}
-            style={{ width: `${meta.remainingPct}%` }}
-          />
+        <div className="mt-1.5 h-1 w-full rounded-full bg-ink/10">
+          <div className={`h-1 rounded-full ${bar}`} style={{ width: `${meta.remainingPct}%` }} />
         </div>
-        <div className="mt-2 flex items-center justify-between text-xs">
-          <span className="text-slate-500">Còn lại {meta.remainingPct}%</span>
-          <span
-            className={`rounded-full px-2 py-0.5 font-semibold ${badgeClass}`}
-          >
-            {badge}
-          </span>
-        </div>
+        <p className="mt-1 text-[11px] tabular-nums text-muted">
+          Tồn {meta.stock} · Giữ chỗ {meta.reserved} · Đã bán {meta.soldCount}
+        </p>
       </div>
     );
   };
 
-  return (
-    <>
-      <Navbar />
-      <div className="max-w-screen-2xl container mx-auto md:px-20 px-4 min-h-screen pt-28">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold">Quản trị: Sách</h1>
-          <div className="relative z-10 flex items-center gap-2 pointer-events-auto">
-            <button
-              type="button"
-              className="px-4 py-2 rounded-md border dark:border-slate-700 pointer-events-auto"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                startCreate();
-              }}
-            >
-              Thêm sách
+  const bookRow = (book, volume, nested = false) => {
+    const meta = getStockMeta(book);
+    return (
+      <tr key={book._id} className={selectedIds.has(book._id) ? "bg-accent/5" : ""}>
+        <td className="w-10">
+          <input
+            type="checkbox"
+            className="checkbox checkbox-sm checkbox-primary"
+            checked={selectedIds.has(book._id)}
+            onChange={() => toggleSelect(book._id)}
+            aria-label={`Chọn ${book.name}`}
+          />
+        </td>
+        <td>
+          <div className={`flex min-w-[240px] items-center gap-3 ${nested ? "pl-6" : ""}`}>
+            <Thumb src={book.image} />
+            <div className="min-w-0">
+              <p className="line-clamp-2 font-medium leading-snug">{book.name}</p>
+              <p className="mt-0.5 text-xs text-muted">
+                {volume ? `Tập ${volume} · ` : ""}
+                {book.category || "Chưa phân nhóm"}
+              </p>
+            </div>
+          </div>
+        </td>
+        <td className="whitespace-nowrap text-right tabular-nums">{formatVnd(book.price)}</td>
+        <td>{renderStock(meta)}</td>
+        <td>
+          {book.isHidden ? <Pill>Đang ẩn</Pill> : <Pill tone="good">Hiển thị</Pill>}
+        </td>
+        <td>
+          <div className="flex justify-end gap-2">
+            <button className="btn-xs-line" onClick={() => startEdit(book)}>
+              Sửa
             </button>
-            <button
-              type="button"
-              className="px-4 py-2 rounded-md bg-slate-900 text-white pointer-events-auto"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                openBulkModal();
-              }}
-            >
-              Cập nhật hàng loạt
+            <button className="btn-xs-danger" onClick={() => remove(book._id)} aria-label={`Xóa ${book.name}`}>
+              Xóa
             </button>
           </div>
-        </div>
+        </td>
+      </tr>
+    );
+  };
 
-        <div className="mt-6 flex flex-wrap gap-2 border-b pb-2">
-          {[
-            { id: "dashboard", label: "Tổng quan" },
-            { id: "list", label: "Danh sách" },
-            { id: "inventory", label: "Nhập kho" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              className={`px-4 py-2 rounded-md text-sm ${
-                activeTab === tab.id
-                  ? "bg-slate-900 text-white"
-                  : "border dark:border-slate-700"
-              }`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </button>
+  const tabs = [
+    { id: "list", label: "Danh sách" },
+    { id: "inventory", label: "Nhập / xuất kho" },
+  ];
+
+  return (
+    <AdminLayout>
+      <PageHeader
+        title="Sách & kho"
+        description={loading ? "Đang tải…" : `${books.length} đầu sách khớp bộ lọc`}
+        actions={
+          <button type="button" className="btn-xs-solid" onClick={startCreate}>
+            + Thêm sách
+          </button>
+        }
+      />
+
+      <div className="mt-4 flex gap-6 border-b border-line" role="tablist">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            className={`-mb-px border-b-2 pb-3 pt-2 text-sm transition-colors ${
+              activeTab === tab.id
+                ? "border-accent font-semibold text-ink"
+                : "border-transparent text-muted hover:text-ink"
+            }`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-[2fr_1fr_1fr_1fr]">
+        <input
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          placeholder="Tìm theo tên / nhóm"
+          className="field col-span-2 md:col-span-4 xl:col-span-1"
+          aria-label="Tìm sách"
+        />
+        <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="field" aria-label="Nhóm">
+          <option value="">Tất cả nhóm</option>
+          {dynamicCategories.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
           ))}
+        </select>
+        <select value={filterGenre} onChange={(e) => setFilterGenre(e.target.value)} className="field" aria-label="Thể loại">
+          <option value="">Tất cả thể loại</option>
+          {genreOptions.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+        <select value={filterStock} onChange={(e) => setFilterStock(e.target.value)} className="field col-span-2 md:col-span-1" aria-label="Tồn kho">
+          <option value="">Mọi tình trạng kho</option>
+          <option value="in">Còn hàng</option>
+          <option value="low">Sắp hết</option>
+          <option value="out">Hết hàng</option>
+        </select>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+        <div className="flex items-center gap-2">
+          <input
+            value={minPrice}
+            onChange={(e) => setMinPrice(e.target.value)}
+            placeholder="Giá từ"
+            type="number"
+            min={0}
+            className="field h-9 w-28"
+            aria-label="Giá từ"
+          />
+          <span className="text-muted">–</span>
+          <input
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(e.target.value)}
+            placeholder="đến"
+            type="number"
+            min={0}
+            className="field h-9 w-28"
+            aria-label="Giá đến"
+          />
         </div>
+        <div className="flex items-center gap-2">
+          <span className="text-muted">Sắp xếp</span>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="field h-9 w-36" aria-label="Sắp xếp theo">
+            <option value="name">Tên A–Z</option>
+            <option value="price">Giá</option>
+            <option value="available">Tồn thực tế</option>
+            <option value="stock">Tồn kho</option>
+          </select>
+          <button
+            type="button"
+            className="btn-xs-line w-20"
+            onClick={() => setSortDir((prev) => (prev === "asc" ? "desc" : "asc"))}
+            aria-label="Đổi chiều sắp xếp"
+          >
+            {sortDir === "asc" ? "↑ Tăng" : "↓ Giảm"}
+          </button>
+        </div>
+        <label className="flex cursor-pointer items-center gap-2">
+          <input
+            type="checkbox"
+            className="toggle toggle-sm toggle-primary"
+            checked={includeHidden}
+            onChange={(e) => setIncludeHidden(e.target.checked)}
+          />
+          Gồm sách đang ẩn
+        </label>
+      </div>
 
-        {activeTab !== "dashboard" ? (
-          <div className="mt-6 grid grid-cols-1 lg:grid-cols-8 gap-3">
-            <input
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              placeholder="Tìm theo tên / nhóm"
-              className="lg:col-span-2 px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-            />
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-            >
-              <option value="">Tất cả nhóm</option>
-              {dynamicCategories.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filterGenre}
-              onChange={(e) => setFilterGenre(e.target.value)}
-              className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-            >
-              <option value="">Tất cả thể loại</option>
-              {genreOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filterStock}
-              onChange={(e) => setFilterStock(e.target.value)}
-              className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-            >
-              <option value="">Tất cả tồn kho</option>
-              <option value="in">Còn hàng</option>
-              <option value="out">Hết hàng</option>
-              <option value="low">Sắp hết</option>
-            </select>
-            <input
-              value={minPrice}
-              onChange={(e) => setMinPrice(e.target.value)}
-              placeholder="Giá từ"
-              type="number"
-              min={0}
-              className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-            />
-            <input
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
-              placeholder="Giá đến"
-              type="number"
-              min={0}
-              className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-            />
-            <div className="flex gap-2">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="flex-1 px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-              >
-                <option value="name">Tên A-Z</option>
-                <option value="price">Giá</option>
-                <option value="available">Tồn thực tế</option>
-                <option value="stock">Tồn kho</option>
-              </select>
+      {activeTab === "list" ? (
+        <div className="mt-6">
+          {selectedIds.size > 0 ? (
+            <div className="sticky top-[104px] z-20 mb-3 flex flex-wrap items-center gap-2 rounded-lg bg-ink px-4 py-2.5 text-paper shadow-lg lg:top-4">
+              <span className="mr-auto text-sm font-medium">Đã chọn {selectedIds.size} sách</span>
+              <button className="h-8 rounded-md px-3 text-sm hover:bg-paper/15" onClick={openBulkModal}>
+                Sửa hàng loạt
+              </button>
+              <button className="h-8 rounded-md px-3 text-sm hover:bg-paper/15" onClick={() => applyBulkAction("show")}>
+                Hiện
+              </button>
+              <button className="h-8 rounded-md px-3 text-sm hover:bg-paper/15" onClick={() => applyBulkAction("hide")}>
+                Ẩn
+              </button>
+              <button className="h-8 rounded-md bg-sale px-3 text-sm font-medium text-white hover:brightness-110" onClick={() => applyBulkAction("delete")}>
+                Xóa
+              </button>
               <button
-                type="button"
-                className="px-3 py-2 border rounded-md dark:border-slate-700"
-                onClick={() =>
-                  setSortDir((prev) => (prev === "asc" ? "desc" : "asc"))
-                }
+                className="h-8 rounded-md px-2 text-sm opacity-70 hover:opacity-100"
+                onClick={() => setSelectedIds(new Set())}
+                aria-label="Bỏ chọn"
               >
-                {sortDir === "asc" ? "Tăng" : "Giảm"}
+                ✕
               </button>
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={includeHidden}
-                onChange={(e) => setIncludeHidden(e.target.checked)}
-              />
-              Hiện ẩn
-            </label>
-          </div>
-        ) : null}
+          ) : null}
 
-        {activeTab === "dashboard" ? (
-          <div className="mt-8">
-            {summaryLoading ? (
-              <p>Đang tải...</p>
-            ) : summary ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="rounded-xl border p-4 bg-white">
-                    <p className="text-xs uppercase text-slate-500">
-                      Tổng đầu sách
-                    </p>
-                    <p className="text-3xl font-bold mt-2">
-                      {summary.totalBooks}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border p-4 bg-white">
-                    <p className="text-xs uppercase text-slate-500">
-                      Sắp hết (&lt;=5)
-                    </p>
-                    <p className="text-3xl font-bold mt-2">
-                      {summary.lowStockCount}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border p-4 bg-white">
-                    <p className="text-xs uppercase text-slate-500">
-                      Doanh thu 7 ngày
-                    </p>
-                    <p className="text-3xl font-bold mt-2">
-                      {summary.revenue7d?.toLocaleString("vi-VN")} VND
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-6">
-                  <h2 className="text-lg font-semibold">Đơn hàng gần nhất</h2>
-                  <div className="mt-3 overflow-x-auto">
-                    <table className="table">
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Khách</th>
-                          <th>Tổng</th>
-                          <th>Trạng thái</th>
-                          <th>Thanh toán</th>
-                          <th>Thời gian</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {summary.recentOrders?.map((order) => (
-                          <tr key={order._id}>
-                            <td>{order._id}</td>
-                            <td>
-                              {order.userId?.fullname ||
-                                order.userId?.email ||
-                                "-"}
-                            </td>
-                            <td>{order.total?.toLocaleString("vi-VN")} VND</td>
-                            <td>{order.status}</td>
-                            <td>{order.paymentStatus}</td>
-                            <td>
-                              {order.createdAt
-                                ? new Date(order.createdAt).toLocaleString(
-                                    "vi-VN",
-                                  )
-                                : ""}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <p>Không có dữ liệu</p>
-            )}
-          </div>
-        ) : null}
+          {loading ? (
+            <LoadingRows rows={6} />
+          ) : !seriesRows.length ? (
+            <EmptyState
+              title="Không có sách phù hợp"
+              hint="Thử bỏ bớt bộ lọc, hoặc thêm sách mới."
+              action={
+                <button className="btn-xs-solid" onClick={startCreate}>
+                  + Thêm sách
+                </button>
+              }
+            />
+          ) : (
+            <div className="panel overflow-x-auto">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th className="w-10">
+                      <input
+                        type="checkbox"
+                        className="checkbox checkbox-sm checkbox-primary"
+                        checked={
+                          visibleBookIds.length > 0 &&
+                          visibleBookIds.every((id) => selectedIds.has(id))
+                        }
+                        onChange={() => toggleSelectAll(visibleBookIds)}
+                        aria-label="Chọn tất cả"
+                      />
+                    </th>
+                    <th>Sách</th>
+                    <th className="!text-right">Giá</th>
+                    <th>Tồn kho</th>
+                    <th>Hiển thị</th>
+                    <th className="!text-right">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {seriesRows.map((row) => {
+                    if (row.type !== "series") return bookRow(row.book);
 
-        {activeTab === "list" ? (
-          <div className="mt-8">
-            {loading ? (
-              <p>Đang tải...</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>
-                        <input
-                          type="checkbox"
-                          checked={
-                            visibleBookIds.length > 0 &&
-                            visibleBookIds.every((id) => selectedIds.has(id))
-                          }
-                          onChange={() => toggleSelectAll(visibleBookIds)}
-                        />
-                      </th>
-                      <th>Tên sách</th>
-                      <th>Nhóm</th>
-                      <th>Giá</th>
-                      <th>Tồn kho</th>
-                      <th>Trạng thái</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {seriesRows.map((row) => {
-                      if (row.type === "series") {
-                        const bookIds = row.books.map((b) => b.book._id);
-                        const allSelected = bookIds.every((id) =>
-                          selectedIds.has(id),
-                        );
-                        const stockTotals = row.books.reduce(
-                          (acc, curr) => {
-                            const meta = getStockMeta(curr.book);
-                            acc.stock += meta.stock;
-                            acc.reserved += meta.reserved;
-                            acc.available += meta.available;
-                            acc.soldCount += meta.soldCount;
-                            acc.threshold = Math.min(
-                              acc.threshold,
-                              meta.threshold,
-                            );
-                            return acc;
-                          },
-                          {
-                            stock: 0,
-                            reserved: 0,
-                            available: 0,
-                            soldCount: 0,
-                            threshold: Number.MAX_SAFE_INTEGER,
-                          },
-                        );
-                        const summaryMeta = getStockMeta({
-                          stock: stockTotals.stock,
-                          reserved: stockTotals.reserved,
-                          lowStockThreshold:
-                            stockTotals.threshold === Number.MAX_SAFE_INTEGER
-                              ? 5
-                              : stockTotals.threshold,
-                          soldCount: stockTotals.soldCount,
-                        });
-                        return (
-                          <Fragment key={row.seriesKey}>
-                            <tr className="bg-slate-50">
-                              <td>
-                                <input
-                                  type="checkbox"
-                                  checked={allSelected}
-                                  onChange={() => toggleSelectGroup(bookIds)}
-                                />
-                              </td>
-                              <td className="font-semibold">
-                                <button
-                                  className="mr-2 text-slate-500"
-                                  onClick={() => toggleSeries(row.seriesKey)}
-                                >
-                                  {expandedSeries.has(row.seriesKey)
-                                    ? "-"
-                                    : "+"}
-                                </button>
-                                {row.seriesName}
-                                <span className="ml-2 text-xs text-slate-500">
-                                  ({row.books.length} tập)
-                                </span>
-                              </td>
-                              <td>-</td>
-                              <td>-</td>
-                              <td>{renderStockCell(summaryMeta)}</td>
-                              <td>
-                                <span className="text-xs text-slate-500">
-                                  Bộ sách
-                                </span>
-                              </td>
-                              <td></td>
-                            </tr>
-                            {expandedSeries.has(row.seriesKey)
-                              ? row.books.map((entry) => {
-                                  const meta = getStockMeta(entry.book);
-                                  return (
-                                    <tr key={entry.book._id}>
-                                      <td>
-                                        <input
-                                          type="checkbox"
-                                          checked={selectedIds.has(
-                                            entry.book._id,
-                                          )}
-                                          onChange={() =>
-                                            toggleSelect(entry.book._id)
-                                          }
-                                        />
-                                      </td>
-                                      <td>
-                                        {entry.book.name}
-                                        {entry.volume ? (
-                                          <span className="ml-2 text-xs text-slate-400">
-                                            Tập {entry.volume}
-                                          </span>
-                                        ) : null}
-                                      </td>
-                                      <td>{entry.book.category}</td>
-                                      <td>{entry.book.price}</td>
-                                      <td>{renderStockCell(meta)}</td>
-                                      <td>
-                                        {entry.book.isHidden ? (
-                                          <span className="text-xs text-slate-400">
-                                            Ẩn
-                                          </span>
-                                        ) : (
-                                          <span className="text-xs text-emerald-600">
-                                            Hiện
-                                          </span>
-                                        )}
-                                      </td>
-                                      <td className="flex gap-2">
-                                        <button
-                                          className="px-3 py-1 border rounded-md dark:border-slate-700"
-                                          onClick={() => startEdit(entry.book)}
-                                        >
-                                          Sửa
-                                        </button>
-                                        <button
-                                          className="px-3 py-1 bg-red-500 text-white rounded-md"
-                                          onClick={() => remove(entry.book._id)}
-                                        >
-                                          Xóa
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  );
-                                })
-                              : null}
-                          </Fragment>
-                        );
-                      }
+                    const bookIds = row.books.map((b) => b.book._id);
+                    const allSelected = bookIds.every((id) => selectedIds.has(id));
+                    const expanded = expandedSeries.has(row.seriesKey);
+                    const totals = row.books.reduce(
+                      (acc, curr) => {
+                        const meta = getStockMeta(curr.book);
+                        acc.stock += meta.stock;
+                        acc.reserved += meta.reserved;
+                        acc.soldCount += meta.soldCount;
+                        acc.threshold = Math.min(acc.threshold, meta.threshold);
+                        return acc;
+                      },
+                      { stock: 0, reserved: 0, soldCount: 0, threshold: Number.MAX_SAFE_INTEGER },
+                    );
+                    const summaryMeta = getStockMeta({
+                      stock: totals.stock,
+                      reserved: totals.reserved,
+                      lowStockThreshold:
+                        totals.threshold === Number.MAX_SAFE_INTEGER ? 5 : totals.threshold,
+                      soldCount: totals.soldCount,
+                    });
+                    const prices = row.books.map((b) => Number(b.book.price) || 0);
+                    const minP = Math.min(...prices);
+                    const maxP = Math.max(...prices);
 
-                      const meta = getStockMeta(row.book);
-                      return (
-                        <tr key={row.book._id}>
+                    return (
+                      <Fragment key={row.seriesKey}>
+                        <tr className="bg-surface/60">
                           <td>
                             <input
                               type="checkbox"
-                              checked={selectedIds.has(row.book._id)}
-                              onChange={() => toggleSelect(row.book._id)}
+                              className="checkbox checkbox-sm checkbox-primary"
+                              checked={allSelected}
+                              onChange={() => toggleSelectGroup(bookIds)}
+                              aria-label={`Chọn cả bộ ${row.seriesName}`}
                             />
-                          </td>
-                          <td>{row.book.name}</td>
-                          <td>{row.book.category}</td>
-                          <td>{row.book.price}</td>
-                          <td>{renderStockCell(meta)}</td>
-                          <td>
-                            {row.book.isHidden ? (
-                              <span className="text-xs text-slate-400">Ẩn</span>
-                            ) : (
-                              <span className="text-xs text-emerald-600">
-                                Hiện
-                              </span>
-                            )}
-                          </td>
-                          <td className="flex gap-2">
-                            <button
-                              className="px-3 py-1 border rounded-md dark:border-slate-700"
-                              onClick={() => startEdit(row.book)}
-                            >
-                              Sửa
-                            </button>
-                            <button
-                              className="px-3 py-1 bg-red-500 text-white rounded-md"
-                              onClick={() => remove(row.book._id)}
-                            >
-                              Xóa
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        ) : null}
-
-        {activeTab === "inventory" ? (
-          <div className="mt-8">
-            {loading ? (
-              <p>Đang tải...</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Tên sách</th>
-                      <th>Tồn kho</th>
-                      <th>Nhập / Xuất</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {books.map((b) => {
-                      const meta = getStockMeta(b);
-                      return (
-                        <tr key={b._id}>
-                          <td>{b.name}</td>
-                          <td>
-                            <div className="text-xs">
-                              Tồn {meta.stock} | Đặt trước {meta.reserved} | Còn{" "}
-                              {meta.available}
-                            </div>
-                          </td>
-                          <td>
-                            <div className="flex flex-col gap-2">
-                              <div className="flex items-center gap-2">
-                                <input
-                                  value={inventoryDrafts[b._id]?.qty || ""}
-                                  onChange={(e) =>
-                                    updateDraft(b._id, { qty: e.target.value })
-                                  }
-                                  placeholder="Qty"
-                                  type="number"
-                                  min={1}
-                                  className="w-20 px-2 py-1 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-                                />
-                                <button
-                                  type="button"
-                                  className="px-2.5 py-1 rounded-md bg-emerald-500 text-white text-xs"
-                                  onClick={() => applyInventory(b._id, "in")}
-                                >
-                                  Nhập
-                                </button>
-                                <button
-                                  type="button"
-                                  className="px-2.5 py-1 rounded-md bg-amber-500 text-white text-xs"
-                                  onClick={() => applyInventory(b._id, "out")}
-                                >
-                                  Xuất
-                                </button>
-                              </div>
-                              <input
-                                value={inventoryDrafts[b._id]?.note || ""}
-                                onChange={(e) =>
-                                  updateDraft(b._id, { note: e.target.value })
-                                }
-                                placeholder="Ghi chú"
-                                className="px-2 py-1 border rounded-md text-xs dark:bg-slate-900 dark:border-slate-700"
-                              />
-                            </div>
                           </td>
                           <td>
                             <button
                               type="button"
-                              className="text-xs text-slate-600 hover:text-slate-900 dark:text-slate-300"
-                              onClick={() => loadInventoryLogs(b._id)}
+                              className="flex min-w-[240px] items-center gap-3 text-left"
+                              onClick={() => toggleSeries(row.seriesKey)}
+                              aria-expanded={expanded}
                             >
-                              Xem lịch sử
+                              <div className="relative h-12 w-9 shrink-0">
+                                <img
+                                  src={row.books[1]?.book.image || row.books[0].book.image}
+                                  alt=""
+                                  className="absolute left-1 top-0 h-11 w-8 rounded-sm object-cover opacity-60"
+                                />
+                                <img
+                                  src={row.books[0].book.image}
+                                  alt=""
+                                  className="absolute -left-0.5 top-1 h-11 w-8 rounded-sm object-cover shadow"
+                                />
+                              </div>
+                              <div>
+                                <p className="font-semibold">{row.seriesName}</p>
+                                <p className="text-xs text-muted">
+                                  <span className={`mr-1 inline-block transition-transform ${expanded ? "rotate-90" : ""}`}>
+                                    ›
+                                  </span>
+                                  Bộ {row.books.length} tập · {expanded ? "Thu gọn" : "Xem các tập"}
+                                </p>
+                              </div>
                             </button>
                           </td>
+                          <td className="whitespace-nowrap text-right tabular-nums text-muted">
+                            {minP === maxP ? formatVnd(minP) : `${formatVnd(minP)} – ${formatVnd(maxP)}`}
+                          </td>
+                          <td>{renderStock(summaryMeta)}</td>
+                          <td />
+                          <td />
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                        {expanded
+                          ? row.books.map((entry) => bookRow(entry.book, entry.volume, true))
+                          : null}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : null}
 
-            {selectedLogBookId ? (
-              <div className="mt-8">
-                <h2 className="text-lg font-semibold">Lịch sử kho</h2>
-                {inventoryLogs.length ? (
-                  <div className="mt-3 overflow-x-auto">
-                    <table className="table">
-                      <thead>
-                        <tr>
-                          <th>Loại</th>
-                          <th>Số lượng</th>
-                          <th>Ghi chú</th>
-                          <th>Thời gian</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {inventoryLogs.map((log) => (
-                          <tr key={log._id}>
-                            <td>{log.type}</td>
-                            <td>{log.quantity}</td>
-                            <td>{log.note || "-"}</td>
-                            <td>
-                              {log.createdAt
-                                ? new Date(log.createdAt).toLocaleString(
-                                    "vi-VN",
-                                  )
-                                : ""}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p className="mt-3 text-sm opacity-70">Chưa có lịch sử</p>
-                )}
-              </div>
-            ) : null}
+      {activeTab === "inventory" ? (
+        <div className="mt-6">
+          {loading ? (
+            <LoadingRows rows={6} />
+          ) : !books.length ? (
+            <EmptyState title="Không có sách phù hợp" />
+          ) : (
+            <div className="panel overflow-x-auto">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Sách</th>
+                    <th>Tồn kho</th>
+                    <th>Nhập / xuất</th>
+                    <th className="!text-right">Lịch sử</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {books.map((b) => {
+                    const meta = getStockMeta(b);
+                    const draft = inventoryDrafts[b._id] || {};
+                    return (
+                      <tr key={b._id}>
+                        <td>
+                          <div className="flex items-center gap-3">
+                            <Thumb src={b.image} />
+                            <p className="line-clamp-2 min-w-[180px] max-w-[260px] font-medium leading-snug">{b.name}</p>
+                          </div>
+                        </td>
+                        <td>{renderStock(meta)}</td>
+                        <td>
+                          <div className="flex min-w-[300px] flex-wrap items-center gap-2">
+                            <input
+                              value={draft.qty || ""}
+                              onChange={(e) => updateDraft(b._id, { qty: e.target.value })}
+                              placeholder="SL"
+                              type="number"
+                              min={1}
+                              className="field h-9 w-20"
+                              aria-label={`Số lượng cho ${b.name}`}
+                            />
+                            <input
+                              value={draft.note || ""}
+                              onChange={(e) => updateDraft(b._id, { note: e.target.value })}
+                              placeholder="Ghi chú"
+                              className="field h-9 w-36 flex-1"
+                              aria-label={`Ghi chú cho ${b.name}`}
+                            />
+                            <button type="button" className="btn-xs-solid" onClick={() => applyInventory(b._id, "in")}>
+                              + Nhập
+                            </button>
+                            <button type="button" className="btn-xs-line" onClick={() => applyInventory(b._id, "out")}>
+                              − Xuất
+                            </button>
+                          </div>
+                        </td>
+                        <td className="text-right">
+                          <button
+                            type="button"
+                            className="link-draw text-sm text-accent"
+                            onClick={() => loadInventoryLogs(b._id)}
+                          >
+                            Xem
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      <Modal
+        open={Boolean(selectedLogBookId)}
+        onClose={() => setSelectedLogBookId(null)}
+        title="Lịch sử kho"
+        side="right"
+      >
+        {logBook ? (
+          <div className="mb-5 flex items-center gap-3">
+            <Thumb src={logBook.image} />
+            <div>
+              <p className="font-medium leading-snug">{logBook.name}</p>
+              <p className="text-xs text-muted">Còn {getStockMeta(logBook).available} cuốn có thể bán</p>
+            </div>
           </div>
         ) : null}
-      </div>
-
-      {showFormModal && modalRoot
-        ? createPortal(
-            <div
-              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-              style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
-            >
-              <div className="w-full max-w-4xl rounded-xl bg-white p-6 shadow-xl">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">
-                    {editingId ? "Cập nhật sách" : "Thêm sách"}
-                  </h2>
-                  <button
-                    className="text-slate-500"
-                    onClick={() => setShowFormModal(false)}
-                  >
-                    Đóng
-                  </button>
-                </div>
-                <form
-                  onSubmit={submit}
-                  className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"
-                >
-                  <input
-                    value={form.name}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, name: e.target.value }))
-                    }
-                    placeholder="Tên sách"
-                    className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-                    required
+        {inventoryLogs.length ? (
+          <ol className="relative space-y-4 border-l border-line pl-5">
+            {inventoryLogs.map((log) => {
+              const isIn = log.type === "in";
+              return (
+                <li key={log._id} className="relative">
+                  <span
+                    className={`absolute -left-[25px] top-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-paper ${
+                      isIn ? "bg-emerald-600" : "bg-amber-500"
+                    }`}
                   />
-                  <input
-                    value={form.price}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, price: e.target.value }))
-                    }
-                    placeholder="Giá"
-                    type="number"
-                    min={0}
-                    className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-                    required
-                  />
-                  <div className="flex gap-2">
-                    {!showCustomCategory ? (
-                      <>
-                        <select
-                          value={form.category}
-                          onChange={(e) =>
-                            setForm((f) => ({ ...f, category: e.target.value }))
-                          }
-                          className="flex-1 px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-                        >
-                          <option value="">Chọn nhóm sản phẩm</option>
-                          {dynamicCategories.map((opt) => (
-                            <option key={opt} value={opt}>
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          className="px-3 py-2 border border-rose-500 text-rose-500 rounded-md text-sm whitespace-nowrap"
-                          onClick={() => setShowCustomCategory(true)}
-                        >
-                          + Thêm mới
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <input
-                          value={form.category}
-                          onChange={(e) =>
-                            setForm((f) => ({ ...f, category: e.target.value }))
-                          }
-                          placeholder="Nhập tên nhóm sản phẩm mới"
-                          className="flex-1 px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-                        />
-                        <button
-                          type="button"
-                          className="px-3 py-2 border border-slate-500 text-slate-500 rounded-md text-sm whitespace-nowrap"
-                          onClick={() => {
-                            setShowCustomCategory(false);
-                            setForm((f) => ({ ...f, category: "" }));
-                          }}
-                        >
-                          Hủy
-                        </button>
-                      </>
-                    )}
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium tabular-nums">
+                      {isIn ? "Nhập" : log.type === "out" ? "Xuất" : log.type} {isIn ? "+" : "−"}
+                      {log.quantity}
+                    </p>
+                    <span className="text-xs text-muted">{formatDateTime(log.createdAt)}</span>
                   </div>
-                  <details className="relative" ref={genresDropdownRef}>
-                    <summary className="cursor-pointer list-none rounded-md border px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
-                      {form.genres.length
-                        ? `Thể loại: ${form.genres.join(", ")}`
-                        : "Chọn thể loại"}
-                    </summary>
-                    <div className="absolute z-10 mt-2 max-h-56 w-full overflow-auto rounded-md border bg-white p-3 shadow-md dark:border-slate-700 dark:bg-slate-900">
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        {genreOptions.map((opt) => (
-                          <label key={opt} className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500"
-                              checked={form.genres.includes(opt)}
-                              onChange={() =>
-                                setForm((f) => ({
-                                  ...f,
-                                  genres: f.genres.includes(opt)
-                                    ? f.genres.filter((g) => g !== opt)
-                                    : [...f.genres, opt],
-                                }))
-                              }
-                              onClick={() => {
-                                if (genresDropdownRef.current) {
-                                  genresDropdownRef.current.open = false;
-                                }
-                              }}
-                            />
-                            <span>{opt}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </details>
-                  <select
-                    value={form.ageGroup}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, ageGroup: e.target.value }))
-                    }
-                    className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-                  >
-                    <option value="">Chọn độ tuổi</option>
-                    {ageOptions.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    value={form.image}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, image: e.target.value }))
-                    }
-                    placeholder="URL ảnh chính"
-                    className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-                    required
-                  />
-                  <input
-                    value={form.stock}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, stock: e.target.value }))
-                    }
-                    placeholder="Tồn kho (stock)"
-                    type="number"
-                    min={0}
-                    className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-                  />
-                  <input
-                    value={form.lowStockThreshold}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        lowStockThreshold: e.target.value,
-                      }))
-                    }
-                    placeholder="Cảnh báo sắp hết"
-                    type="number"
-                    min={0}
-                    className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-                  />
-                  <textarea
-                    value={form.images}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, images: e.target.value }))
-                    }
-                    placeholder="Danh sách URL ảnh (phân cách bởi dấu phẩy)"
-                    rows={2}
-                    className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700 md:col-span-2"
-                  />
-                  <textarea
-                    value={form.title}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, title: e.target.value }))
-                    }
-                    placeholder="Tiêu đề (mô tả sản phẩm)"
-                    rows={4}
-                    className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700 md:col-span-2"
-                  />
-                  <input
-                    value={form.supplier}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, supplier: e.target.value }))
-                    }
-                    placeholder="Tên nhà cung cấp"
-                    className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-                  />
-                  <input
-                    value={form.author}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, author: e.target.value }))
-                    }
-                    placeholder="Tác giả"
-                    className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-                  />
-                  <input
-                    value={form.translator}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, translator: e.target.value }))
-                    }
-                    placeholder="Người dịch"
-                    className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-                  />
-                  <input
-                    value={form.publisher}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, publisher: e.target.value }))
-                    }
-                    placeholder="NXB"
-                    className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-                  />
-                  <input
-                    value={form.publishYear}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, publishYear: e.target.value }))
-                    }
-                    placeholder="Năm XB"
-                    type="number"
-                    min={0}
-                    className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-                  />
-                  <input
-                    value={form.weightGr}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, weightGr: e.target.value }))
-                    }
-                    placeholder="Trọng lượng (gr)"
-                    type="number"
-                    min={0}
-                    className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-                  />
-                  <input
-                    value={form.packageSize}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, packageSize: e.target.value }))
-                    }
-                    placeholder="Kích thước bao bì"
-                    className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-                  />
-                  <input
-                    value={form.pages}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, pages: e.target.value }))
-                    }
-                    placeholder="Số trang"
-                    type="number"
-                    min={0}
-                    className="px-3 py-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
-                  />
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={form.isHidden}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, isHidden: e.target.checked }))
-                      }
-                    />
-                    Ẩn sản phẩm
-                  </label>
+                  {log.note ? <p className="mt-0.5 text-sm text-muted">{log.note}</p> : null}
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <p className="text-sm text-muted">Chưa có lịch sử nhập/xuất.</p>
+        )}
+      </Modal>
 
-                  <div className="flex gap-3 md:col-span-2">
-                    <button className="px-4 py-2 bg-pink-500 text-white rounded-md">
-                      {editingId ? "Cập nhật" : "Tạo mới"}
+      <Modal
+        open={showFormModal}
+        onClose={closeForm}
+        title={editingId ? "Sửa sách" : "Thêm sách"}
+        size="max-w-3xl"
+        footer={
+          <>
+            <button type="button" className="btn-xs-line" onClick={closeForm}>
+              Hủy
+            </button>
+            <button type="submit" form="book-form" className="btn-xs-solid">
+              {editingId ? "Lưu thay đổi" : "Thêm sách"}
+            </button>
+          </>
+        }
+      >
+        <form id="book-form" onSubmit={submit} className="space-y-7">
+          <fieldset className="grid gap-4 md:grid-cols-2">
+            <legend className="mb-3 font-display text-base font-medium">Thông tin cơ bản</legend>
+            <div className="md:col-span-2">
+              <label className="field-label" htmlFor="bf-name">Tên sách *</label>
+              <input id="bf-name" value={form.name} onChange={setField("name")} className="field" required />
+            </div>
+            <div>
+              <label className="field-label" htmlFor="bf-price">Giá (VND) *</label>
+              <input id="bf-price" value={form.price} onChange={setField("price")} type="number" min={0} className="field" required />
+            </div>
+            <div>
+              <label className="field-label" htmlFor="bf-cat">Nhóm sản phẩm</label>
+              <div className="flex gap-2">
+                {!showCustomCategory ? (
+                  <>
+                    <select id="bf-cat" value={form.category} onChange={setField("category")} className="field">
+                      <option value="">Chọn nhóm</option>
+                      {dynamicCategories.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="button" className="btn-xs-line h-10 shrink-0" onClick={() => setShowCustomCategory(true)}>
+                      + Mới
                     </button>
+                  </>
+                ) : (
+                  <>
+                    <input
+                      id="bf-cat"
+                      value={form.category}
+                      onChange={setField("category")}
+                      placeholder="Tên nhóm mới"
+                      className="field"
+                    />
                     <button
                       type="button"
-                      className="px-4 py-2 border rounded-md"
+                      className="btn-xs-line h-10 shrink-0"
                       onClick={() => {
-                        setShowFormModal(false);
-                        setEditingId(null);
-                        setForm(emptyForm);
+                        setShowCustomCategory(false);
+                        setForm((f) => ({ ...f, category: "" }));
                       }}
                     >
                       Hủy
                     </button>
-                  </div>
-                </form>
+                  </>
+                )}
               </div>
-            </div>,
-            modalRoot,
-          )
-        : null}
+            </div>
+            <div>
+              <label className="field-label" htmlFor="bf-age">Độ tuổi</label>
+              <select id="bf-age" value={form.ageGroup} onChange={setField("ageGroup")} className="field">
+                <option value="">Chọn độ tuổi</option>
+                {ageOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="md:col-span-2">
+              <span className="field-label">Thể loại</span>
+              <div className="flex flex-wrap gap-2" ref={genresDropdownRef}>
+                {genreOptions.map((opt) => {
+                  const on = form.genres.includes(opt);
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          genres: on ? f.genres.filter((g) => g !== opt) : [...f.genres, opt],
+                        }))
+                      }
+                      className={`h-8 rounded-full border px-3 text-sm transition-colors ${
+                        on
+                          ? "border-accent bg-accent text-accent-ink"
+                          : "border-line text-muted hover:border-ink/40 hover:text-ink"
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="md:col-span-2">
+              <label className="field-label" htmlFor="bf-title">Mô tả</label>
+              <textarea id="bf-title" value={form.title} onChange={setField("title")} rows={4} className="field" />
+            </div>
+          </fieldset>
 
-      {bulkModalOpen && modalRoot
-        ? createPortal(
-            <div
-              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-              style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
+          <fieldset className="grid gap-4 md:grid-cols-[96px_1fr]">
+            <legend className="mb-3 font-display text-base font-medium">Hình ảnh</legend>
+            <div className="hidden h-32 w-24 overflow-hidden rounded-sm bg-ink/10 md:block">
+              {form.image ? <img src={form.image} alt="" className="h-full w-full object-cover" /> : null}
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="field-label" htmlFor="bf-img">URL ảnh bìa *</label>
+                <input id="bf-img" value={form.image} onChange={setField("image")} placeholder="https://…" className="field" required />
+              </div>
+              <div>
+                <label className="field-label" htmlFor="bf-imgs">Ảnh chi tiết (phân cách bằng dấu phẩy)</label>
+                <textarea id="bf-imgs" value={form.images} onChange={setField("images")} rows={2} className="field" />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset className="grid grid-cols-2 gap-4">
+            <legend className="mb-3 font-display text-base font-medium">Kho</legend>
+            <div>
+              <label className="field-label" htmlFor="bf-stock">Tồn kho</label>
+              <input id="bf-stock" value={form.stock} onChange={setField("stock")} type="number" min={0} className="field" />
+            </div>
+            <div>
+              <label className="field-label" htmlFor="bf-low">Cảnh báo khi còn ≤</label>
+              <input id="bf-low" value={form.lowStockThreshold} onChange={setField("lowStockThreshold")} type="number" min={0} placeholder="5" className="field" />
+            </div>
+            <label className="col-span-2 flex cursor-pointer items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="toggle toggle-sm toggle-primary"
+                checked={form.isHidden}
+                onChange={(e) => setForm((f) => ({ ...f, isHidden: e.target.checked }))}
+              />
+              Ẩn sách khỏi cửa hàng
+            </label>
+          </fieldset>
+
+          <fieldset className="grid gap-4 md:grid-cols-2">
+            <legend className="mb-3 font-display text-base font-medium">Chi tiết xuất bản</legend>
+            {[
+              ["author", "Tác giả"],
+              ["translator", "Người dịch"],
+              ["publisher", "Nhà xuất bản"],
+              ["supplier", "Nhà cung cấp"],
+            ].map(([key, label]) => (
+              <div key={key}>
+                <label className="field-label" htmlFor={`bf-${key}`}>{label}</label>
+                <input id={`bf-${key}`} value={form[key]} onChange={setField(key)} className="field" />
+              </div>
+            ))}
+            <div className="grid grid-cols-2 gap-4 md:col-span-2 md:grid-cols-4">
+              {[
+                ["publishYear", "Năm XB", "number"],
+                ["pages", "Số trang", "number"],
+                ["weightGr", "Trọng lượng (g)", "number"],
+                ["packageSize", "Kích thước", "text"],
+              ].map(([key, label, type]) => (
+                <div key={key}>
+                  <label className="field-label" htmlFor={`bf-${key}`}>{label}</label>
+                  <input
+                    id={`bf-${key}`}
+                    value={form[key]}
+                    onChange={setField(key)}
+                    type={type}
+                    min={type === "number" ? 0 : undefined}
+                    className="field"
+                  />
+                </div>
+              ))}
+            </div>
+          </fieldset>
+        </form>
+      </Modal>
+
+      <Modal
+        open={bulkModalOpen}
+        onClose={() => setBulkModalOpen(false)}
+        title={`Sửa ${selectedIds.size} sách`}
+        size="max-w-md"
+        footer={
+          <>
+            <button type="button" className="btn-xs-line" onClick={() => setBulkModalOpen(false)}>
+              Hủy
+            </button>
+            <button type="button" className="btn-xs-solid" onClick={applyBulkUpdate}>
+              Áp dụng
+            </button>
+          </>
+        }
+      >
+        <p className="mb-4 text-sm text-muted">Chỉ những ô bạn điền mới được thay đổi.</p>
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            ["price", "Giá mới", "number"],
+            ["stock", "Tồn kho mới", "number"],
+            ["lowStockThreshold", "Cảnh báo khi còn ≤", "number"],
+            ["category", "Nhóm sản phẩm", "text"],
+          ].map(([key, label, type]) => (
+            <div key={key}>
+              <label className="field-label" htmlFor={`bulk-${key}`}>{label}</label>
+              <input
+                id={`bulk-${key}`}
+                value={bulkForm[key]}
+                onChange={(e) => setBulkForm((f) => ({ ...f, [key]: e.target.value }))}
+                type={type}
+                min={type === "number" ? 0 : undefined}
+                className="field"
+              />
+            </div>
+          ))}
+          <div className="col-span-2">
+            <label className="field-label" htmlFor="bulk-hidden">Hiển thị</label>
+            <select
+              id="bulk-hidden"
+              value={bulkForm.isHidden}
+              onChange={(e) => setBulkForm((f) => ({ ...f, isHidden: e.target.value }))}
+              className="field"
             >
-              <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">Cập nhật hàng loạt</h2>
-                  <button
-                    className="text-slate-500"
-                    onClick={() => setBulkModalOpen(false)}
-                  >
-                    Đóng
-                  </button>
-                </div>
-                <div className="mt-4 grid grid-cols-1 gap-3">
-                  <input
-                    value={bulkForm.price}
-                    onChange={(e) =>
-                      setBulkForm((f) => ({ ...f, price: e.target.value }))
-                    }
-                    placeholder="Giá mới"
-                    type="number"
-                    min={0}
-                    className="px-3 py-2 border rounded-md"
-                  />
-                  <input
-                    value={bulkForm.stock}
-                    onChange={(e) =>
-                      setBulkForm((f) => ({ ...f, stock: e.target.value }))
-                    }
-                    placeholder="Stock mới"
-                    type="number"
-                    min={0}
-                    className="px-3 py-2 border rounded-md"
-                  />
-                  <input
-                    value={bulkForm.lowStockThreshold}
-                    onChange={(e) =>
-                      setBulkForm((f) => ({
-                        ...f,
-                        lowStockThreshold: e.target.value,
-                      }))
-                    }
-                    placeholder="Cảnh báo sắp hết"
-                    type="number"
-                    min={0}
-                    className="px-3 py-2 border rounded-md"
-                  />
-                  <input
-                    value={bulkForm.category}
-                    onChange={(e) =>
-                      setBulkForm((f) => ({ ...f, category: e.target.value }))
-                    }
-                    placeholder="Nhóm sản phẩm"
-                    className="px-3 py-2 border rounded-md"
-                  />
-                  <select
-                    value={bulkForm.isHidden}
-                    onChange={(e) =>
-                      setBulkForm((f) => ({ ...f, isHidden: e.target.value }))
-                    }
-                    className="px-3 py-2 border rounded-md"
-                  >
-                    <option value="">Không đổi trạng thái ẩn</option>
-                    <option value="true">Ẩn</option>
-                    <option value="false">Hiện</option>
-                  </select>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    className="px-4 py-2 rounded-md bg-slate-900 text-white"
-                    onClick={applyBulkUpdate}
-                  >
-                    Áp dụng
-                  </button>
-                  <button
-                    className="px-4 py-2 rounded-md border"
-                    onClick={() => applyBulkAction("hide")}
-                  >
-                    Ẩn nhiều
-                  </button>
-                  <button
-                    className="px-4 py-2 rounded-md border"
-                    onClick={() => applyBulkAction("show")}
-                  >
-                    Hiện nhiều
-                  </button>
-                  <button
-                    className="px-4 py-2 rounded-md bg-red-500 text-white"
-                    onClick={() => applyBulkAction("delete")}
-                  >
-                    Xóa nhiều
-                  </button>
-                </div>
-              </div>
-            </div>,
-            modalRoot,
-          )
-        : null}
-
-      <Footer />
-    </>
+              <option value="">Không đổi</option>
+              <option value="true">Ẩn</option>
+              <option value="false">Hiện</option>
+            </select>
+          </div>
+        </div>
+      </Modal>
+    </AdminLayout>
   );
 }
 
