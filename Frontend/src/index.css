@@ -1,25 +1,183 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Palette "Warm paper and walnut" (taste skill, trade: retail / bookshop).
+  Paper holds the page, walnut is the one button, the links and the focus ring;
+  the book covers bring every other colour.
+  Channels are space-separated RGB so Tailwind can apply opacity.
+*/
 :root {
-  --surface-alt: #1a1a1a;
-  --accent: #c0392b;
+  --paper: 247 243 236; /* #f7f3ec */
+  --surface: 237 230 218; /* #ede6da */
+  --ink: 42 38 34; /* #2a2622 */
+  --muted: 102 94 85; /* #665e55 */
+  --line: 221 212 198; /* #ddd4c6 */
+  --accent: 122 74 44; /* #7a4a2c */
+  --accent-ink: 255 255 255;
+  --sale: 158 52 34; /* price cut only */
+}
+
+:root.dark {
+  --paper: 28 25 22;
+  --surface: 39 35 31;
+  --ink: 240 234 225;
+  --muted: 168 158 146;
+  --line: 58 53 47;
+  --accent: 201 145 106;
+  --accent-ink: 28 25 22;
+  --sale: 232 128 104;
+}
+
+html {
+  background: rgb(var(--paper));
 }
 
 body {
-  font-family: "DM Sans", sans-serif;
+  font-family: "Hanken Grotesk", system-ui, sans-serif;
+  background: rgb(var(--paper));
+  color: rgb(var(--ink));
+  -webkit-font-smoothing: antialiased;
 }
 
 h1,
 h2,
 h3,
-h4,
-h5,
-h6 {
-  font-family: "Playfair Display", serif;
+.font-display {
+  font-family: "Newsreader", Georgia, serif;
+  font-optical-sizing: auto;
+  letter-spacing: -0.018em;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+}
+
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Buttons: one pair for the whole storefront. Step on hover, press on click. */
+@layer components {
+  .btn-solid {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md bg-accent px-5 text-sm font-semibold text-accent-ink transition duration-150;
+  }
+  .btn-solid:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+  .btn-line {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md border border-ink/25 px-5 text-sm font-semibold text-ink transition duration-150;
+  }
+  .btn-line:hover {
+    @apply border-ink bg-ink/5;
+    transform: translateY(-1px);
+  }
+  .btn-solid:active,
+  .btn-line:active {
+    transform: translateY(1px);
+  }
+  .link-draw {
+    background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px
+      no-repeat;
+    transition: background-size 200ms ease;
+  }
+  .link-draw:hover {
+    background-size: 100% 1px;
+  }
+  /* One container for the whole site: its own box is the content edge
+     (24px gutter on a phone, 48 on a tablet, 80 from 1024, 1280 at most). */
+  .wrap {
+    --gut: 24px;
+    width: min(100% - 2 * var(--gut), 1280px);
+    margin-inline: auto;
+  }
+  @media (min-width: 640px) {
+    .wrap {
+      --gut: 48px;
+    }
+  }
+  @media (min-width: 1024px) {
+    .wrap {
+      --gut: 80px;
+    }
+  }
+}
+
+/*
+  Home sections (taste skill layout): every section is exactly one or two screens,
+  its h2 first, 120px under the section top (96 on a phone). --h is the desktop
+  height in screens, --hm the phone height. The tablet lets a box grow past its
+  screens rather than overlap.
+*/
+.sec {
+  box-sizing: border-box;
+  height: calc(var(--h, 1) * 100svh);
+  padding-top: 120px;
+  padding-bottom: 72px;
+}
+.sec > .wrap {
+  height: 100%;
+}
+.hero.sec {
+  padding-bottom: 64px;
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  .sec {
+    height: auto;
+    min-height: calc(var(--h, 1) * 100svh);
+  }
+}
+@media (max-width: 639px) {
+  .sec {
+    height: auto;
+    min-height: calc(var(--hm, 1) * 100lvh);
+    padding-top: 96px;
+    padding-bottom: 48px;
+  }
+  .hero.sec {
+    height: 100svh;
+    min-height: 0;
+    padding-bottom: 140px;
+  }
+}
+html {
+  scroll-padding-top: 0;
+  scroll-behavior: auto;
+}
+
+/* daisyUI keeps a closed <dialog class="modal"> laid out; a closed one is not rendered at all. */
+dialog.modal:not([open]) {
+  display: none;
+}
+
+
+/* The hero enters once on load. */
+.enter {
+  animation: enter 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.enter-2 {
+  animation-delay: 90ms;
+}
+.enter-3 {
+  animation-delay: 180ms;
+}
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .page-transition {
@@ -37,7 +195,12 @@ h6 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page-transition {
+  .page-transition,
+  .enter {
     animation: none;
+  }
+  .btn-solid,
+  .btn-line {
+    transition: none;
   }
 }

@@ -1,0 +1,51 @@
+{
+ "note": "Credits for the photographs in this folder: photos.mjs credits prints the footer block for the ones the pages use.",
+ "photos": [
+  {
+   "file": "photo-c877.jpg",
+   "files": [
+    "photo-c877-500.jpg",
+    "photo-c877-960.jpg",
+    "photo-c877-1280.jpg",
+    "photo-c877.jpg"
+   ],
+   "id": "c877",
+   "alt": "Close-up of soft-focus stacked books showing page edges and covers with no readable spines",
+   "by": "Nenad Stojkovic",
+   "licence": "CC BY 2.0",
+   "licenceUrl": "https://creativecommons.org/licenses/by/2.0/",
+   "page": "https://commons.wikimedia.org/wiki/File:Close-up_of_stacked_books._(51539890528).jpg",
+   "source": "Wikimedia Commons"
+  },
+  {
+   "file": "photo-f61756279.jpg",
+   "files": [
+    "photo-f61756279-500.jpg",
+    "photo-f61756279-960.jpg",
+    "photo-f61756279.jpg"
+   ],
+   "id": "f61756279",
+   "alt": "Books in stack with lamps (Unsplash)",
+   "by": "chuttersnap chuttersnap",
+   "licence": "CC0",
+   "licenceUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "page": "https://commons.wikimedia.org/wiki/File:Books_in_stack_with_lamps_(Unsplash).jpg",
+   "source": "Wikimedia Commons"
+  },
+  {
+   "file": "photo-f116757397.jpg",
+   "files": [
+    "photo-f116757397-500.jpg",
+    "photo-f116757397-960.jpg",
+    "photo-f116757397.jpg"
+   ],
+   "id": "f116757397",
+   "alt": "Close-up of stacked books. (51539890528)",
+   "by": "Nenad Stojkovic",
+   "licence": "CC BY 2.0",
+   "licenceUrl": "https://creativecommons.org/licenses/by/2.0",
+   "page": "https://commons.wikimedia.org/wiki/File:Close-up_of_stacked_books._(51539890528).jpg",
+   "source": "Wikimedia Commons"
+  }
+ ]
+}
