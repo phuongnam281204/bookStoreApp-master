@@ -13,6 +13,16 @@ function Navbar() {
   const { lang, toggleLang, t } = useI18n();
 
   const [search, setSearch] = useState("");
+  const [openMenu, setOpenMenu] = useState(null);
+  const menuProps = (id) => ({
+    "aria-expanded": openMenu === id,
+    "aria-haspopup": "menu",
+    onFocus: () => setOpenMenu(id),
+    onClick: () => setOpenMenu(id),
+    onBlur: (e) => {
+      if (!e.currentTarget.parentElement?.contains(e.relatedTarget)) setOpenMenu(null);
+    },
+  });
 
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem("theme");
@@ -71,11 +81,14 @@ function Navbar() {
       }}
     >
       <label
-        className={`input input-bordered input-sm flex items-center gap-2 rounded-full ${widthClassName}`}
+        className={`input input-sm flex items-center gap-2 rounded-md border-line bg-surface focus-within:border-ink focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent ${widthClassName}`}
       >
+        <span className="shrink-0 text-xs font-semibold text-muted">
+          {t("nav.search")}
+        </span>
         <input
           type="text"
-          className="min-w-0 grow"
+          className="min-w-0 grow focus-visible:!outline focus-visible:!outline-2 focus-visible:!outline-offset-4 focus-visible:!outline-accent"
           placeholder={t("nav.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -130,18 +143,19 @@ function Navbar() {
   );
 
   return (
-    <div
-      className={`fixed top-0 left-0 right-0 z-50 bg-base-100 text-base-content ${
-        sticky ? "shadow-md bg-base-200" : ""
+    <header
+      className={`nav fixed top-0 left-0 right-0 z-50 border-b bg-paper/95 text-ink backdrop-blur transition-colors ${
+        sticky ? "border-line" : "border-transparent"
       }`}
     >
-      <div className="max-w-screen-2xl container mx-auto md:px-20 px-4">
+      <div className="wrap">
         <div className="navbar px-0">
           <div className="navbar-start gap-2 flex-1 min-w-0">
-            <div className="dropdown md:hidden">
+            <div className="dropdown xl:hidden">
               <div
                 tabIndex={0}
                 role="button"
+                {...menuProps("main")}
                 className="btn btn-ghost btn-sm"
                 aria-label={t("nav.menu")}
                 title={t("nav.menu")}
@@ -173,20 +187,60 @@ function Navbar() {
               </ul>
             </div>
 
-            <Link to="/" className="btn btn-ghost text-xl font-bold">
-              bookStore
+            <Link
+              to="/"
+              className="flex min-h-[44px] shrink-0 items-center gap-2 font-display text-xl font-medium tracking-tight sm:gap-2.5 sm:text-2xl"
+            >
+              <img
+                src="/assets/img/logo.webp"
+                alt=""
+                width="36"
+                height="36"
+                className="h-8 w-8 rounded-lg sm:h-9 sm:w-9"
+              />
+              BookStore
             </Link>
 
-            <div className="hidden md:flex flex-1 min-w-0 justify-center overflow-x-auto overflow-y-hidden">
-              <ul className="menu menu-horizontal menu-sm flex-nowrap whitespace-nowrap px-1 w-max">
+            <div className="hidden xl:flex flex-1 min-w-0 justify-center">
+              <ul className="menu menu-horizontal menu-sm flex-nowrap whitespace-nowrap px-1 w-max font-medium">
                 {navItems}
               </ul>
             </div>
           </div>
 
           <div className="navbar-end gap-1 sm:gap-2 md:gap-3 flex-none">
-            <div className="hidden md:flex lg:ml-4">
-              {renderSearchForm("w-36 md:w-40 lg:w-56 xl:w-72")}
+            <div className="hidden min-[1440px]:flex">
+              {renderSearchForm("w-64")}
+            </div>
+            <div className="dropdown dropdown-end hidden xl:block min-[1440px]:hidden">
+              <button
+                type="button"
+                tabIndex={0}
+                {...menuProps("search")}
+                className="btn btn-ghost btn-sm btn-circle"
+                aria-label={t("nav.search")}
+                title={t("nav.search")}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 0 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+              <div
+                tabIndex={0}
+                className="dropdown-content z-[1] mt-3 w-80 rounded-box bg-base-100 p-2 shadow"
+              >
+                {renderSearchForm("w-full")}
+              </div>
             </div>
 
             <button
@@ -209,31 +263,32 @@ function Navbar() {
               </span>
             </button>
 
-            <label className="btn btn-ghost btn-sm swap swap-rotate hidden md:flex">
-              <input
-                type="checkbox"
-                checked={theme === "dark"}
-                onChange={(e) => setTheme(e.target.checked ? "dark" : "light")}
-                aria-label={t("theme.toggle")}
-                title={t("theme.toggle")}
-              />
-
-              <svg
-                className="swap-off fill-current w-5 h-5"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-              >
-                <path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z" />
-              </svg>
-
-              <svg
-                className="swap-on fill-current w-5 h-5"
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm hidden md:flex"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              aria-label={t("theme.toggle")}
+              aria-pressed={theme === "dark"}
+              title={t("theme.toggle")}
+            >
+              {theme === "dark" ? (
+                <svg
+                className="fill-current w-5 h-5"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
               >
                 <path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z" />
               </svg>
-            </label>
+              ) : (
+                <svg
+                className="fill-current w-5 h-5"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+              >
+                <path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z" />
+              </svg>
+              )}
+            </button>
 
             {authUser ? (
               <>
@@ -243,6 +298,8 @@ function Navbar() {
                     <div className="dropdown dropdown-end">
                     <label
                       tabIndex={0}
+                      role="button"
+                      {...menuProps("side3")}
                       className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-full bg-base-200 cursor-pointer"
                       title={authUser.fullname || authUser.email}
                       aria-label={authUser.fullname || authUser.email}
@@ -304,6 +361,8 @@ function Navbar() {
                     <div className="dropdown dropdown-end">
                     <label
                       tabIndex={0}
+                      role="button"
+                      {...menuProps("side4")}
                       className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-full bg-base-200 cursor-pointer"
                       title={authUser.fullname || authUser.email}
                       aria-label={authUser.fullname || authUser.email}
@@ -353,6 +412,7 @@ function Navbar() {
                   <button
                     type="button"
                     tabIndex={0}
+                    {...menuProps("side1")}
                     className="btn btn-ghost btn-sm btn-circle"
                     aria-label={authUser.fullname || authUser.email}
                     title={authUser.fullname || authUser.email}
@@ -433,14 +493,14 @@ function Navbar() {
                 <div className="hidden md:flex items-center gap-2">
                   <button
                     type="button"
-                    className="btn btn-primary btn-sm whitespace-nowrap"
+                    className="btn-solid whitespace-nowrap"
                     onClick={() => openAuthModal("login")}
                   >
                     {t("nav.login")}
                   </button>
                   <Link
                     to="/signup"
-                    className="text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                    className="link-draw whitespace-nowrap text-sm font-semibold text-muted hover:text-ink"
                     onClick={(event) => {
                       event.preventDefault();
                       openAuthModal("signup");
@@ -453,6 +513,7 @@ function Navbar() {
                   <button
                     type="button"
                     tabIndex={0}
+                    {...menuProps("side2")}
                     className="btn btn-ghost btn-sm btn-circle"
                     aria-label={t("nav.menu")}
                     title={t("nav.menu")}
@@ -504,13 +565,13 @@ function Navbar() {
                     </li>
                   </ul>
                 </div>
-                <Login />
               </>
             )}
           </div>
         </div>
       </div>
-    </div>
+      {authUser ? null : <Login />}
+    </header>
   );
 }
 

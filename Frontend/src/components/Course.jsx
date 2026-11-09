@@ -154,11 +154,11 @@ function Course() {
 
   return (
     <>
-      <div className=" max-w-screen-2xl container mx-auto md:px-20 px-4">
-        <div className="mt-28">
-          <h1 className="text-2xl md:text-4xl font-bold">{t("nav.course")}</h1>
+      <div className="wrap pb-24">
+        <div className="mt-28 border-b border-line pb-6">
+          <h1 className="font-display text-4xl font-medium md:text-5xl">{t("nav.course")}</h1>
           {q ? (
-            <p className="mt-3 opacity-80">
+            <p className="mt-3 text-muted">
               {t("course.searchResults", {
                 count: filteredBooks.length,
                 q,
@@ -168,33 +168,33 @@ function Course() {
         </div>
 
         {q && filteredBooks.length === 0 ? (
-          <p className="mt-8 opacity-80">{t("course.empty")}</p>
+          <p className="mt-8 text-muted">{t("course.empty")}</p>
         ) : null}
 
-        <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[260px,1fr]">
-          <aside className="self-start lg:sticky lg:top-28 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div className="mt-10 grid grid-cols-1 gap-10 lg:grid-cols-[240px,1fr] lg:gap-14">
+          <aside className="self-start lg:sticky lg:top-28">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold">Bộ lọc</h2>
+              <h2 className="font-display text-2xl font-medium">Bộ lọc</h2>
               <button
                 type="button"
-                className="text-xs font-semibold text-rose-600"
+                className="link-draw min-h-[44px] text-sm font-semibold text-accent"
                 onClick={resetFilters}
               >
-                Xóa
+                Bỏ lọc
               </button>
             </div>
 
-            <div className="mt-5 space-y-6 text-sm">
+            <div className="mt-4 divide-y divide-line border-t border-line text-sm">
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <h3 className="pt-5 text-sm font-semibold">
                   Nhóm sản phẩm
                 </h3>
-                <div className="mt-3 space-y-2">
+                <div className="mt-2 pb-5">
                   {groupOptions.map((group) => (
-                    <label key={group} className="flex items-center gap-2">
+                    <label key={group} className="flex min-h-[36px] cursor-pointer items-center gap-2 hover:text-accent">
                       <input
                         type="checkbox"
-                        className="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500"
+                        className="h-4 w-4 accent-accent"
                         checked={selectedGroups.includes(group)}
                         onChange={() => toggleFilter(group, setSelectedGroups)}
                       />
@@ -205,16 +205,16 @@ function Course() {
               </div>
 
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <h3 className="pt-5 text-sm font-semibold">
                   Giá
                 </h3>
-                <div className="mt-3 space-y-2">
+                <div className="mt-2 pb-5">
                   {priceOptions.map((opt) => (
-                    <label key={opt.value} className="flex items-center gap-2">
+                    <label key={opt.value} className="flex min-h-[36px] cursor-pointer items-center gap-2 hover:text-accent">
                       <input
                         type="radio"
                         name="price"
-                        className="h-4 w-4 border-slate-300 text-rose-500 focus:ring-rose-500"
+                        className="h-4 w-4 accent-accent"
                         checked={priceRange === opt.value}
                         onChange={() => setPriceRange(opt.value)}
                       />
@@ -225,15 +225,15 @@ function Course() {
               </div>
 
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Genres
+                <h3 className="pt-5 text-sm font-semibold">
+                  Thể loại
                 </h3>
-                <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="mt-2 grid grid-cols-2 gap-x-2 pb-5">
                   {genreOptions.map((genre) => (
-                    <label key={genre} className="flex items-center gap-2">
+                    <label key={genre} className="flex min-h-[36px] cursor-pointer items-center gap-2 hover:text-accent">
                       <input
                         type="checkbox"
-                        className="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500"
+                        className="h-4 w-4 accent-accent"
                         checked={selectedGenres.includes(genre)}
                         onChange={() => toggleFilter(genre, setSelectedGenres)}
                       />
@@ -244,15 +244,15 @@ function Course() {
               </div>
 
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <h3 className="pt-5 text-sm font-semibold">
                   Độ tuổi
                 </h3>
-                <div className="mt-3 grid grid-cols-3 gap-2">
+                <div className="mt-2 grid grid-cols-3 gap-x-2 pb-5">
                   {ageOptions.map((age) => (
-                    <label key={age} className="flex items-center gap-2">
+                    <label key={age} className="flex min-h-[36px] cursor-pointer items-center gap-2 hover:text-accent">
                       <input
                         type="checkbox"
-                        className="h-4 w-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500"
+                        className="h-4 w-4 accent-accent"
                         checked={selectedAges.includes(age)}
                         onChange={() => toggleFilter(age, setSelectedAges)}
                       />
@@ -266,15 +266,15 @@ function Course() {
 
           <section>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-muted">
                 Hiển thị {pagedBooks.length} / {filteredBooks.length} sản phẩm
               </p>
             </div>
 
             {filteredBooks.length === 0 ? (
-              <p className="mt-8 opacity-80">Không có sản phẩm phù hợp.</p>
+              <p className="mt-8 text-muted">Không có cuốn nào khớp bộ lọc này.</p>
             ) : (
-              <div className="mt-6 grid grid-cols-2 gap-4 sm:gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              <div className="mt-6 grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {pagedBooks.map((item) => (
                   <Cards key={item._id || item.id} item={item} />
                 ))}
@@ -282,23 +282,23 @@ function Course() {
             )}
 
             {totalPages > 1 ? (
-              <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
+              <div className="mt-14 flex flex-wrap items-center gap-1 border-t border-line pt-6">
                 <button
                   type="button"
-                  className="rounded-full border border-slate-200 px-3 py-1 text-sm disabled:opacity-50"
+                  className="min-h-[44px] px-3 text-sm font-semibold text-muted hover:text-ink disabled:opacity-40"
                   onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
                 >
-                  Trước
+                  ← Trước
                 </button>
                 {paginationItems.map((item, index) => (
                   <button
                     key={`${item}-${index}`}
                     type="button"
-                    className={`h-8 min-w-[32px] rounded-full px-2 text-sm font-semibold ${
+                    className={`h-11 min-w-[44px] rounded-md px-2 text-sm font-semibold ${
                       item === currentPage
-                        ? "bg-rose-600 text-white"
-                        : "border border-slate-200 text-slate-600"
+                        ? "bg-ink text-paper"
+                        : "text-muted hover:bg-surface hover:text-ink"
                     }`}
                     onClick={() =>
                       typeof item === "number" ? setPage(item) : null
@@ -310,13 +310,13 @@ function Course() {
                 ))}
                 <button
                   type="button"
-                  className="rounded-full border border-slate-200 px-3 py-1 text-sm disabled:opacity-50"
+                  className="min-h-[44px] px-3 text-sm font-semibold text-muted hover:text-ink disabled:opacity-40"
                   onClick={() =>
                     setPage((prev) => Math.min(totalPages, prev + 1))
                   }
                   disabled={currentPage === totalPages}
                 >
-                  Sau
+                  Sau →
                 </button>
               </div>
             ) : null}

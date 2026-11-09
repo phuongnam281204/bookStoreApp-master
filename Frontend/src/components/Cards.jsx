@@ -4,7 +4,11 @@ import { useAuth } from "../context/AuthProvider";
 import { useI18n } from "../context/I18nProvider";
 import toast from "react-hot-toast";
 
-function Cards({ item }) {
+const formatVnd = (value) => `${Number(value || 0).toLocaleString("vi-VN")}đ`;
+
+// One book card for the whole storefront.
+// variant "grid": cover on top (default). variant "row": cover left, text right.
+function Cards({ item, variant = "grid" }) {
   const { addItem } = useCart();
   const [authUser] = useAuth();
   const { t } = useI18n();
@@ -12,6 +16,7 @@ function Cards({ item }) {
   const imageSrc =
     item?.image ||
     (Array.isArray(item?.images) && item.images.length ? item.images[0] : "");
+  const href = `/book/${item._id || item.id}`;
 
   const price = Number(item?.price || 0);
   const originalPrice = Number(
@@ -35,80 +40,101 @@ function Cards({ item }) {
     if (modal && typeof modal.showModal === "function") modal.showModal();
   };
 
-  return (
-    <>
-      <div className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-        <Link to={`/book/${item._id || item.id}`} className="block">
-          <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-50 dark:bg-slate-800">
-            <img
-              src={imageSrc}
-              alt={item.name}
-              className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-              loading="lazy"
-            />
-            {badgeText ? (
-              <span className="absolute bottom-3 right-3 rounded-full bg-black/80 px-3 py-1 text-xs font-semibold text-white">
-                {badgeText}
-              </span>
-            ) : null}
-          </div>
-        </Link>
+  const addToCart = () => {
+    if (!authUser) return requireLogin();
+    addItem(item);
+  };
 
-        <div className="p-4">
-          <h3 className="line-clamp-2 text-sm font-semibold leading-5">
-            {item.name}
-          </h3>
-
-          <div className="mt-3 flex items-center gap-2">
-            <span className="text-base font-bold text-rose-600">
-              {price.toLocaleString("vi-VN")}đ
-            </span>
-            {hasDiscount ? (
-              <span className="rounded-md bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-600">
-                -{discountPercent}%
-              </span>
-            ) : null}
-          </div>
-          {hasDiscount ? (
-            <div className="mt-1 text-sm text-slate-400 line-through">
-              {originalPrice.toLocaleString("vi-VN")}đ
-            </div>
-          ) : null}
-
-          <div className="mt-3 flex items-center gap-1 text-xs text-slate-400">
-            {Array.from({ length: 5 }).map((_, index) => {
-              const filled = index + 1 <= Math.round(rating);
-              return (
-                <svg
-                  key={index}
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className={`h-4 w-4 ${filled ? "text-amber-400" : "text-slate-200 dark:text-slate-700"}`}
-                  aria-hidden="true"
-                >
-                  <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                </svg>
-              );
-            })}
-            <span>({ratingCount})</span>
-          </div>
-
-          <div className="mt-4">
-            <button
-              type="button"
-              className="w-full rounded-full border border-slate-300 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 hover:border-rose-500 hover:text-rose-600 dark:border-slate-600 dark:text-slate-200"
-              onClick={() => {
-                if (!authUser) return requireLogin();
-                addItem(item);
-              }}
-            >
-              {t("cards.buyNow")}
-            </button>
-          </div>
-        </div>
+  const cover = (
+    <Link
+      to={href}
+      className="group block overflow-hidden rounded-sm bg-surface shadow-[0_1px_2px_rgb(0_0_0/0.06),0_10px_24px_-14px_rgb(0_0_0/0.3)]"
+      tabIndex={-1}
+      aria-hidden="true"
+    >
+      <div className="relative aspect-[2/3] w-full">
+        {imageSrc ? (
+          <img
+            src={imageSrc}
+            alt=""
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+            loading="lazy"
+          />
+        ) : null}
+        {badgeText ? (
+          <span className="absolute left-2 top-2 rounded-sm bg-ink/85 px-2 py-0.5 text-xs font-medium text-paper">
+            {badgeText}
+          </span>
+        ) : null}
       </div>
-    </>
+    </Link>
+  );
+
+  const priceBlock = (
+    <div className="flex flex-wrap items-baseline gap-x-2">
+      <span className="font-semibold">{formatVnd(price)}</span>
+      {hasDiscount ? (
+        <>
+          <span className="text-sm text-muted line-through">
+            {formatVnd(originalPrice)}
+          </span>
+          <span className="text-sm font-semibold text-sale">
+            −{discountPercent}%
+          </span>
+        </>
+      ) : null}
+    </div>
+  );
+
+  const ratingLine =
+    ratingCount > 0 ? (
+      <p className="text-xs text-muted">
+        <span aria-hidden="true" className="text-accent">
+          ★
+        </span>{" "}
+        {rating.toFixed(1)}
+        <span className="sr-only"> / 5</span> · {ratingCount}
+      </p>
+    ) : null;
+
+  const addButton = (
+    <button type="button" className="btn-line w-full" onClick={addToCart}>
+      {t("cards.buyNow")}
+    </button>
+  );
+
+  if (variant === "row") {
+    return (
+      <article className="grid grid-cols-[88px_1fr] gap-4 sm:grid-cols-[104px_1fr]">
+        {cover}
+        <div className="flex min-w-0 flex-col">
+          <p className="text-base font-semibold leading-snug">
+            <Link to={href} className="link-draw">
+              {item.name}
+            </Link>
+          </p>
+          {item.author ? (
+            <p className="mt-1 text-sm text-muted">{item.author}</p>
+          ) : null}
+          <div className="mt-2">{priceBlock}</div>
+          <div className="mt-auto pt-3 sm:max-w-[180px]">{addButton}</div>
+        </div>
+      </article>
+    );
+  }
+
+  return (
+    <article className="card flex h-full flex-col">
+      {cover}
+      <p className="mt-4 text-[15px] font-semibold leading-snug">
+        <Link to={href} className="link-draw">
+          {item.name}
+        </Link>
+      </p>
+      <div className="mt-2">{priceBlock}</div>
+      {ratingLine ? <div className="mt-1">{ratingLine}</div> : null}
+      <div className="mt-auto pt-4">{addButton}</div>
+    </article>
   );
 }
 

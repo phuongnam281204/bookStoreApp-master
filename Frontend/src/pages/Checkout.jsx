@@ -241,75 +241,77 @@ function Checkout() {
   return (
     <>
       <Navbar />
-      <div className="max-w-screen-2xl container mx-auto md:px-20 px-4 min-h-screen pt-28 pb-16">
-        <h1 className="text-2xl font-bold">{t("checkout.title")}</h1>
+      <main className="wrap min-h-screen pb-24 pt-28">
+        <h1 className="border-b border-line pb-6 font-display text-4xl font-medium md:text-5xl">
+          {t("checkout.title")}
+        </h1>
 
         {!items.length ? (
-          <div className="mt-6 rounded-2xl border border-dashed p-8 text-center">
+          <div className="py-16 text-lg text-muted">
             {t("checkout.empty")}
-            <Link className="text-blue-600" to="/cart">
+            <Link className="link-draw font-semibold text-accent" to="/cart">
               {t("checkout.cartLink")}
             </Link>
             .
           </div>
         ) : (
-          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-            <div className="space-y-4">
-              <div className="rounded-2xl border bg-white p-4 shadow-sm">
-                <div className="text-sm font-semibold uppercase text-slate-500">
+          <div className="mt-10 grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-16">
+            <div className="max-w-2xl space-y-10">
+              <div className="mt-6 border-t border-line pt-6">
+                <div className="font-display text-2xl font-medium">
                   {t("checkout.shippingTitle")}
                 </div>
                 <div className="mt-4 grid grid-cols-1 gap-3">
                   <div>
-                    <label className="text-sm font-medium">
+                    <label className="text-sm font-semibold">
                       {t("checkout.fullName")}
                     </label>
                     <input
                       type="text"
                       placeholder={t("checkout.fullNamePlaceholder")}
-                      className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                      className="mt-2 min-h-[44px] w-full rounded-md border border-line bg-paper px-3 text-sm focus:border-ink/40 focus:outline-none disabled:opacity-60"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">
+                    <label className="text-sm font-semibold">
                       {t("checkout.email")}
                     </label>
                     <input
                       type="email"
                       placeholder={t("checkout.emailPlaceholder")}
-                      className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                      className="mt-2 min-h-[44px] w-full rounded-md border border-line bg-paper px-3 text-sm focus:border-ink/40 focus:outline-none disabled:opacity-60"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">
+                    <label className="text-sm font-semibold">
                       {t("checkout.phone")}
                     </label>
                     <input
                       type="tel"
                       placeholder={t("checkout.phonePlaceholder")}
-                      className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                      className="mt-2 min-h-[44px] w-full rounded-md border border-line bg-paper px-3 text-sm focus:border-ink/40 focus:outline-none disabled:opacity-60"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">
+                    <label className="text-sm font-semibold">
                       {t("checkout.country")}
                     </label>
-                    <select className="mt-1 w-full rounded-md border px-3 py-2 text-sm">
+                    <select className="mt-2 min-h-[44px] w-full rounded-md border border-line bg-paper px-3 text-sm focus:border-ink/40 focus:outline-none disabled:opacity-60">
                       <option>{t("checkout.countryPlaceholder")}</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">
+                    <label className="text-sm font-semibold">
                       {t("checkout.city")}
                     </label>
                     <select
-                      className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                      className="mt-2 min-h-[44px] w-full rounded-md border border-line bg-paper px-3 text-sm focus:border-ink/40 focus:outline-none disabled:opacity-60"
                       value={cityCode}
                       onChange={(e) => setCityCode(e.target.value)}
                     >
@@ -322,11 +324,11 @@ function Checkout() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">
+                    <label className="text-sm font-semibold">
                       {t("checkout.district")}
                     </label>
                     <select
-                      className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                      className="mt-2 min-h-[44px] w-full rounded-md border border-line bg-paper px-3 text-sm focus:border-ink/40 focus:outline-none disabled:opacity-60"
                       value={districtCode}
                       onChange={(e) => setDistrictCode(e.target.value)}
                       disabled={!districts.length}
@@ -342,11 +344,11 @@ function Checkout() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">
+                    <label className="text-sm font-semibold">
                       {t("checkout.ward")}
                     </label>
                     <select
-                      className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                      className="mt-2 min-h-[44px] w-full rounded-md border border-line bg-paper px-3 text-sm focus:border-ink/40 focus:outline-none disabled:opacity-60"
                       value={wardCode}
                       onChange={(e) => setWardCode(e.target.value)}
                       disabled={!wards.length}
@@ -360,13 +362,13 @@ function Checkout() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">
+                    <label className="text-sm font-semibold">
                       {t("checkout.addressLine")}
                     </label>
                     <input
                       type="text"
                       placeholder={t("checkout.addressLinePlaceholder")}
-                      className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                      className="mt-2 min-h-[44px] w-full rounded-md border border-line bg-paper px-3 text-sm focus:border-ink/40 focus:outline-none disabled:opacity-60"
                       value={addressLine}
                       onChange={(e) => setAddressLine(e.target.value)}
                     />
@@ -374,45 +376,45 @@ function Checkout() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border bg-white p-4 shadow-sm">
-                <div className="text-sm font-semibold uppercase text-slate-500">
+              <div className="mt-6 border-t border-line pt-6">
+                <div className="font-display text-2xl font-medium">
                   {t("checkout.shippingMethod")}
                 </div>
-                <div className="mt-3 text-sm text-slate-600">
+                <div className="mt-3 text-sm text-muted">
                   {t("checkout.shippingNote")}
                 </div>
               </div>
 
-              <div className="rounded-2xl border bg-white p-4 shadow-sm">
-                <div className="text-sm font-semibold uppercase text-slate-500">
+              <div className="mt-6 border-t border-line pt-6">
+                <div className="font-display text-2xl font-medium">
                   {t("checkout.paymentMethod")}
                 </div>
                 <div className="mt-4 space-y-3 text-sm">
-                  <label className="flex items-center gap-3">
+                  <label className="flex min-h-[44px] cursor-pointer items-center gap-3">
                     <input
                       type="radio"
                       name="payment"
-                      className="h-4 w-4 accent-red-600"
+                      className="h-4 w-4 accent-accent"
                       checked={payment === "momo"}
                       onChange={() => setPayment("momo")}
                     />
                     <span>{t("checkout.paymentMomo")}</span>
                   </label>
-                  <label className="flex items-center gap-3">
+                  <label className="flex min-h-[44px] cursor-pointer items-center gap-3">
                     <input
                       type="radio"
                       name="payment"
-                      className="h-4 w-4 accent-red-600"
+                      className="h-4 w-4 accent-accent"
                       checked={payment === "vnpay"}
                       onChange={() => setPayment("vnpay")}
                     />
                     <span>{t("checkout.paymentVnpay")}</span>
                   </label>
-                  <label className="flex items-center gap-3">
+                  <label className="flex min-h-[44px] cursor-pointer items-center gap-3">
                     <input
                       type="radio"
                       name="payment"
-                      className="h-4 w-4 accent-red-600"
+                      className="h-4 w-4 accent-accent"
                       checked={payment === "cod"}
                       onChange={() => setPayment("cod")}
                     />
@@ -421,21 +423,21 @@ function Checkout() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border bg-white p-4 shadow-sm">
-                <div className="text-sm font-semibold uppercase text-slate-500">
+              <div className="mt-6 border-t border-line pt-6">
+                <div className="font-display text-2xl font-medium">
                   {t("checkout.voucherTitle")}
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-3">
                   <input
                     type="text"
                     placeholder={t("checkout.voucherPlaceholder")}
-                    className="flex-1 rounded-md border px-3 py-2 text-sm"
+                    className="min-h-[44px] min-w-0 flex-1 rounded-md border border-line bg-paper px-3 text-sm focus:border-ink/40 focus:outline-none"
                     value={voucherCode}
                     onChange={(e) => setVoucherCode(e.target.value)}
                   />
                   <button
                     type="button"
-                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white"
+                    className="btn-line"
                     onClick={applyVoucher}
                   >
                     {t("checkout.voucherApply")}
@@ -443,19 +445,15 @@ function Checkout() {
                   {voucherInfo ? (
                     <button
                       type="button"
-                      className="text-sm text-rose-600"
+                      className="link-draw min-h-[44px] text-sm font-semibold text-sale"
                       onClick={clearVoucher}
                     >
                       {t("checkout.voucherRemove")}
                     </button>
-                  ) : (
-                    <button type="button" className="text-sm text-blue-600">
-                      {t("checkout.voucherPick")}
-                    </button>
-                  )}
+                  ) : null}
                 </div>
                 {voucherInfo ? (
-                  <div className="mt-2 text-xs text-emerald-600">
+                  <div className="mt-3 text-sm text-accent">
                     {t("checkout.voucherApplied")}: {voucherInfo.code} (-
                     {discountPercent}%)
                     {voucherInfo.expiresAt
@@ -464,46 +462,44 @@ function Checkout() {
                   </div>
                 ) : null}
                 {voucherError ? (
-                  <div className="mt-2 text-xs text-rose-600">
+                  <div className="mt-3 text-sm text-sale">
                     {voucherError}
                   </div>
                 ) : null}
-                <button className="mt-3 text-xs text-slate-500">
-                  {t("checkout.voucherGuide")}
-                </button>
+                
               </div>
 
-              <div className="rounded-2xl border bg-white p-4 shadow-sm">
-                <div className="text-sm font-semibold uppercase text-slate-500">
+              <div className="mt-6 border-t border-line pt-6">
+                <div className="font-display text-2xl font-medium">
                   {t("checkout.otherInfo")}
                 </div>
-                <div className="mt-3 flex items-center gap-2 text-sm">
+                <label className="mt-3 flex min-h-[44px] cursor-pointer items-center gap-3 text-sm">
                   <input
                     type="checkbox"
-                    className="h-4 w-4"
+                    className="h-4 w-4 accent-accent"
                     checked={invoiceRequested}
                     onChange={(e) => setInvoiceRequested(e.target.checked)}
                   />
                   <span>{t("checkout.invoice")}</span>
-                </div>
+                </label>
                 <textarea
-                  className="mt-3 w-full rounded-md border px-3 py-2 text-sm"
+                  className="mt-3 w-full rounded-md border border-line bg-paper px-3 py-2 text-sm focus:border-ink/40 focus:outline-none"
                   rows={3}
                   placeholder={t("checkout.notePlaceholder")}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                 />
-                <div className="mt-2 text-xs text-red-500">
+                <div className="mt-2 text-xs text-muted">
                   {t("checkout.invoiceNote")}
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="rounded-2xl border bg-white p-4 shadow-sm">
-                <div className="text-sm font-semibold uppercase text-slate-500">
+            <aside className="self-start rounded-md bg-surface p-6 lg:sticky lg:top-28">
+              <div>
+                <h2 className="font-display text-2xl font-medium">
                   {t("checkout.orderReview")}
-                </div>
+                </h2>
                 <div className="mt-4 space-y-3">
                   {items.map((item) => (
                     <div key={item.id} className="flex items-center gap-3">
@@ -511,18 +507,18 @@ function Checkout() {
                         <img
                           src={item.image}
                           alt={item.name}
-                          className="h-16 w-12 rounded-md object-cover"
+                          className="h-16 w-11 rounded-sm object-cover"
                         />
                       ) : (
-                        <div className="h-16 w-12 rounded-md bg-slate-100" />
+                        <div className="h-16 w-11 rounded-sm bg-line" />
                       )}
                       <div className="flex-1">
                         <div className="text-sm font-semibold">{item.name}</div>
-                        <div className="text-xs text-slate-500">
+                        <div className="text-xs text-muted">
                           x{item.qty}
                         </div>
                       </div>
-                      <div className="text-sm font-semibold text-red-600">
+                      <div className="text-sm font-semibold">
                         {formatVnd(item.price * item.qty)}
                       </div>
                     </div>
@@ -530,9 +526,9 @@ function Checkout() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border bg-white p-4 shadow-sm">
+              <div className="mt-6 border-t border-line pt-6">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">
+                  <span className="text-muted">
                     {t("checkout.subtotal")}
                   </span>
                   <span className="font-semibold">
@@ -540,15 +536,15 @@ function Checkout() {
                   </span>
                 </div>
                 <div className="mt-2 flex items-center justify-between text-sm">
-                  <span className="text-slate-500">
+                  <span className="text-muted">
                     {t("checkout.discount")}
                   </span>
-                  <span className="font-semibold text-emerald-600">
+                  <span className="font-semibold text-accent">
                     -{formatVnd(discountAmount)}
                   </span>
                 </div>
                 <div className="mt-3 flex items-center justify-between text-sm">
-                  <span className="text-slate-500">
+                  <span className="text-muted">
                     {t("checkout.shippingFee")}
                   </span>
                   <span className="font-semibold">
@@ -559,24 +555,24 @@ function Checkout() {
                   <span className="text-sm font-semibold">
                     {t("checkout.totalWithVat")}
                   </span>
-                  <span className="text-2xl font-bold text-red-600">
+                  <span className="font-display text-3xl font-medium">
                     {formatVnd(finalTotal)}
                   </span>
                 </div>
                 <button
-                  className="mt-4 w-full rounded-xl bg-red-600 py-3 text-sm font-semibold text-white"
+                  className="btn-solid mt-6 w-full"
                   onClick={placeOrder}
                 >
                   {t("checkout.confirmPayment")}
                 </button>
-                <div className="mt-2 text-xs text-slate-500">
+                <div className="mt-2 text-xs text-muted">
                   {t("checkout.termsNote")}
                 </div>
               </div>
-            </div>
+            </aside>
           </div>
         )}
-      </div>
+      </main>
       <Footer />
     </>
   );

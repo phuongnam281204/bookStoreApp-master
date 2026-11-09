@@ -1,190 +1,111 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useI18n } from "../context/I18nProvider";
 
+const formatPrice = (price) =>
+  new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(price || 0);
+
+// One screen on the dark ground: the five best sellers as a list on the left,
+// the one under the pointer (the first at rest) as its cover on the right.
 function WeeklyBestseller({ books }) {
-  const [activeTab, setActiveTab] = useState("Tất cả");
-  const [hoveredBook, setHoveredBook] = useState(null);
+  const { t } = useI18n();
+  const [hoveredId, setHoveredId] = useState(null);
 
-  // Extract unique categories for tabs
-  const categories = useMemo(() => {
-    const cats = new Set();
-    (books || []).forEach((b) => {
-      if (b.category && b.category.toLowerCase() !== "free") {
-        cats.add(b.category);
-      }
-    });
-    return ["Tất cả", ...Array.from(cats)].slice(0, 9); // Limit tabs
-  }, [books]);
+  const topBooks = useMemo(
+    () =>
+      (books || [])
+        .filter((b) => String(b?.category || "").toLowerCase() !== "free")
+        .slice()
+        .sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0))
+        .slice(0, 5),
+    [books],
+  );
 
-  // Get top 5 books for active tab
-  const topBooks = useMemo(() => {
-    let filtered = books || [];
-    if (activeTab !== "Tất cả") {
-      filtered = filtered.filter((b) => b.category === activeTab);
-    }
-    
-    // Sort by soldCount descending
-    return filtered
-      .sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0))
-      .slice(0, 5);
-  }, [books, activeTab]);
-
-  // Default to first book if none hovered
-  const displayBook = hoveredBook || topBooks[0];
-
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(price || 0);
-  };
+  const displayBook =
+    topBooks.find((b) => b._id === hoveredId) || topBooks[0] || null;
 
   return (
-    <div className="max-w-screen-2xl container mx-auto md:px-20 px-4 mt-10">
-      <div className="bg-white border border-slate-200 shadow-sm dark:bg-slate-900 dark:border-slate-700">
-        {/* Header */}
-        <div className="bg-slate-800 text-white p-4">
-          <h2 className="text-xl font-bold uppercase tracking-wide">Bảng xếp hạng bán chạy tuần</h2>
-        </div>
+    <section
+      id="weekly"
+      className="sec bg-ink text-paper"
+      style={{ "--h": 1, "--hm": 2 }}
+    >
+      <div className="wrap">
+        <h2 className="font-display text-[1.875rem] font-normal leading-tight tracking-[-0.01em] lg:text-5xl">
+          {t("weekly.title")}
+        </h2>
 
-        {/* Tabs */}
-        <div className="border-b border-slate-200 dark:border-slate-700">
-          <div className="flex overflow-x-auto hide-scrollbar">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => {
-                  setActiveTab(cat);
-                  setHoveredBook(null);
-                }}
-                className={`whitespace-nowrap px-6 py-3 font-medium text-sm transition-colors relative ${
-                  activeTab === cat
-                    ? "text-red-500"
-                    : "text-slate-600 dark:text-slate-400 hover:text-rose-500"
-                }`}
+        {topBooks.length === 0 ? (
+          <p className="mt-10 text-paper/70">{t("weekly.empty")}</p>
+        ) : (
+          <div className="mt-8 grid gap-6 lg:mt-10 lg:grid-cols-12">
+            <div className="lg:col-span-6">
+              <ol>
+                {topBooks.map((book, index) => {
+                  const active = displayBook?._id === book._id;
+                  return (
+                    <li key={book._id} className="border-b border-paper/15">
+                      <Link
+                        to={`/book/${book._id}`}
+                        onMouseEnter={() => setHoveredId(book._id)}
+                        onFocus={() => setHoveredId(book._id)}
+                        className={`grid grid-cols-[2.5rem_1fr] items-baseline gap-x-4 py-4 transition-colors ${
+                          active
+                            ? "text-paper"
+                            : "text-paper/70 hover:text-paper"
+                        }`}
+                      >
+                        <span className="font-display text-3xl tabular-nums">
+                          {index + 1}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block font-semibold leading-snug">
+                            {book.name}
+                          </span>
+                          <span className="mt-1 block text-sm text-paper/60">
+                            {book.author || t("weekly.manyAuthors")} ·{" "}
+                            {t("weekly.sold", {
+                              count: (book.soldCount || 0).toLocaleString(
+                                "vi-VN",
+                              ),
+                            })}
+                          </span>
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ol>
+              <Link
+                to="/bestsellers"
+                className="link-draw mt-6 inline-flex min-h-[44px] items-center text-sm font-semibold text-paper/80 hover:text-paper"
               >
-                {cat}
-                {activeTab === cat && (
-                  <span className="absolute bottom-0 left-0 w-full h-0.5 bg-red-500"></span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="p-6">
-          {topBooks.length === 0 ? (
-            <p className="text-center text-slate-500 py-10">Chưa có dữ liệu</p>
-          ) : (
-            <div className="flex flex-col md:flex-row gap-8">
-              {/* Left Column: List */}
-              <div className="md:w-1/2 flex flex-col gap-4">
-                {topBooks.map((book, index) => (
-                  <div
-                    key={book._id}
-                    onMouseEnter={() => setHoveredBook(book)}
-                    className={`flex gap-4 p-3 rounded-lg cursor-pointer transition-colors ${
-                      displayBook?._id === book._id
-                        ? "bg-slate-50 dark:bg-slate-800"
-                        : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                    }`}
-                  >
-                    <div className="flex flex-col items-center justify-center font-bold text-xl min-w-[30px]">
-                      <span className="text-slate-800 dark:text-white">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <span className="text-green-500 text-sm">↑</span>
-                    </div>
-                    
-                    <div className="w-16 h-24 shrink-0 rounded overflow-hidden border border-slate-200 dark:border-slate-700 bg-white">
-                      <img
-                        src={book.image || "/placeholder.png"}
-                        alt={book.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    
-                    <div className="flex flex-col justify-center">
-                      <h3 className="font-semibold text-slate-800 dark:text-white line-clamp-2">
-                        {book.name}
-                      </h3>
-                      <p className="text-sm text-slate-500 mt-1">
-                        {book.author || "Nhiều tác giả"}
-                      </p>
-                      <p className="text-sm text-blue-500 mt-1 font-medium">
-                        {(book.soldCount || 0) * 5} điểm
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Right Column: Detail */}
-              {displayBook && (
-                <div className="md:w-1/2 md:border-l md:border-slate-200 dark:md:border-slate-700 md:pl-8 flex flex-col sm:flex-row gap-6">
-                  <div className="w-full sm:w-1/3 shrink-0">
-                    <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-white shadow-sm">
-                      <img
-                        src={displayBook.image || "/placeholder.png"}
-                        alt={displayBook.name}
-                        className="w-full h-auto object-contain"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="w-full sm:w-2/3 flex flex-col">
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-white">
-                      {displayBook.name}
-                    </h3>
-                    <div className="text-sm text-slate-600 dark:text-slate-400 mt-2 space-y-1">
-                      <p>Tác giả: <span className="font-medium text-slate-800 dark:text-slate-200">{displayBook.author || "Đang cập nhật"}</span></p>
-                      <p>Nhà xuất bản: <span className="font-medium text-slate-800 dark:text-slate-200">{displayBook.publisher || "Đang cập nhật"}</span></p>
-                    </div>
-
-                    <div className="mt-4 flex items-end gap-3">
-                      <span className="text-2xl font-bold text-red-500">
-                        {formatPrice(displayBook.price)}
-                      </span>
-                      {displayBook.price < 155000 && (
-                        <>
-                          <span className="text-sm text-slate-500 line-through mb-1">
-                            {formatPrice(Math.round(displayBook.price * 1.3))}
-                          </span>
-                          <span className="text-xs font-medium text-white bg-red-500 px-2 py-0.5 rounded mb-1">
-                            -30%
-                          </span>
-                        </>
-                      )}
-                    </div>
-
-                    <div className="mt-6">
-                      <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-[10] whitespace-pre-wrap leading-relaxed">
-                        {displayBook.title ? (
-                          displayBook.title === displayBook.title.toUpperCase() ?
-                            displayBook.title.toLowerCase().replace(/(^\s*\w|[.!?]\s*\w)/g, c => c.toUpperCase()) :
-                            displayBook.title
-                        ) : "Chưa có mô tả chi tiết cho sản phẩm này."}
-                      </p>
-                    </div>
-
-
-                  </div>
-                </div>
-              )}
+                {t("weekly.more")} →
+              </Link>
             </div>
-          )}
 
-          <div className="mt-8 text-center">
-            <Link
-              to="/bestsellers"
-              className="inline-block px-8 py-2 border-2 border-red-500 text-red-500 font-medium rounded hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-            >
-              Xem thêm
-            </Link>
+            {displayBook ? (
+              <Link
+                to={`/book/${displayBook._id}`}
+                className="group relative flex h-[640px] items-center justify-center overflow-hidden bg-paper/[0.06] lg:col-span-6 lg:h-[560px]"
+                aria-label={`${displayBook.name}, ${formatPrice(displayBook.price)}`}
+              >
+                {displayBook.image ? (
+                  <img
+                    src={displayBook.image}
+                    alt={displayBook.name}
+                    className="h-[82%] w-auto rounded-sm object-contain shadow-[0_24px_48px_-20px_rgb(0_0_0/0.6)] transition duration-300 group-hover:scale-[1.03]"
+                  />
+                ) : null}
+              </Link>
+            ) : null}
           </div>
-        </div>
+        )}
       </div>
-    </div>
+    </section>
   );
 }
 

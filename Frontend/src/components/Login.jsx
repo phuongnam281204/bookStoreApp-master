@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
@@ -206,21 +206,22 @@ function Login({ defaultTab = "login", autoOpen = false }) {
     <div>
       <dialog id="my_modal_3" className="modal">
         <div className="modal-box">
-          <Link
-            to="/"
+          <button
+            type="button"
+            aria-label="Đóng"
             className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
             onClick={() => document.getElementById("my_modal_3").close()}
           >
             ✕
-          </Link>
+          </button>
 
-          <div className="flex items-center justify-center gap-10 border-b border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-center gap-10 border-b border-line">
             <button
               type="button"
               className={`py-3 text-sm font-semibold transition min-w-[110px] text-center ${
                 activeTab === "login"
-                  ? "text-rose-500 border-b-2 border-rose-500"
-                  : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                  ? "text-ink border-b-2 border-accent"
+                  : "text-muted hover:text-ink"
               }`}
               onClick={() => setActiveTab("login")}
             >
@@ -230,8 +231,8 @@ function Login({ defaultTab = "login", autoOpen = false }) {
               type="button"
               className={`py-3 text-sm font-semibold transition min-w-[110px] text-center ${
                 activeTab === "signup"
-                  ? "text-rose-500 border-b-2 border-rose-500"
-                  : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                  ? "text-ink border-b-2 border-accent"
+                  : "text-muted hover:text-ink"
               }`}
               onClick={() => setActiveTab("signup")}
             >
@@ -242,8 +243,9 @@ function Login({ defaultTab = "login", autoOpen = false }) {
           {activeTab === "login" ? (
             <form onSubmit={loginForm.handleSubmit(submitLogin)}>
               <div className="mt-5 space-y-2">
-                <span>{t("auth.login.email")}</span>
+                <label htmlFor="login-email" className="block text-sm font-semibold">{t("auth.login.email")}</label>
                 <input
+                  id="login-email"
                   type="email"
                   placeholder={t("auth.login.emailPlaceholder")}
                   className="input input-bordered w-full"
@@ -257,9 +259,10 @@ function Login({ defaultTab = "login", autoOpen = false }) {
               </div>
 
               <div className="mt-4 space-y-2">
-                <span>{t("auth.login.password")}</span>
+                <label htmlFor="login-password" className="block text-sm font-semibold">{t("auth.login.password")}</label>
                 <div className="relative">
                   <input
+                  id="login-password"
                     type={showLoginPassword ? "text" : "password"}
                     placeholder={t("auth.login.passwordPlaceholder")}
                     className="input input-bordered w-full pr-16"
@@ -267,7 +270,7 @@ function Login({ defaultTab = "login", autoOpen = false }) {
                   />
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
                     onClick={() => setShowLoginPassword((prev) => !prev)}
                     aria-label={
                       showLoginPassword
@@ -338,7 +341,7 @@ function Login({ defaultTab = "login", autoOpen = false }) {
               </div>
 
               <div className="mt-5">
-                <div className="divider text-xs uppercase text-slate-400">
+                <div className="divider text-xs text-muted">
                   {t("auth.login.or")}
                 </div>
                 {googleClientId ? (
@@ -349,7 +352,7 @@ function Login({ defaultTab = "login", autoOpen = false }) {
                 ) : (
                   <button
                     type="button"
-                    className="btn btn-outline w-full"
+                    className="btn-line w-full"
                     onClick={() =>
                       toast.error(t("auth.login.googleNotConfigured"))
                     }
@@ -360,12 +363,12 @@ function Login({ defaultTab = "login", autoOpen = false }) {
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-6">
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn-solid">
                   {t("nav.login")}
                 </button>
                 <button
                   type="button"
-                  className="text-sm font-semibold text-slate-500 hover:text-slate-700"
+                  className="text-sm font-semibold text-muted hover:text-ink"
                   onClick={openForgotModal}
                 >
                   {t("auth.forgot")}
@@ -404,8 +407,9 @@ function Login({ defaultTab = "login", autoOpen = false }) {
                 style={{ position: "absolute", left: "-9999px" }}
               />
               <div className="mt-5 space-y-2">
-                <span>{t("auth.signup.name")}</span>
+                <label htmlFor="signup-name" className="block text-sm font-semibold">{t("auth.signup.name")}</label>
                 <input
+                  id="signup-name"
                   type="text"
                   placeholder={t("auth.signup.namePlaceholder")}
                   className="input input-bordered w-full"
@@ -420,8 +424,9 @@ function Login({ defaultTab = "login", autoOpen = false }) {
               </div>
 
               <div className="mt-4 space-y-2">
-                <span>{t("auth.signup.email")}</span>
+                <label htmlFor="signup-email" className="block text-sm font-semibold">{t("auth.signup.email")}</label>
                 <input
+                  id="signup-email"
                   type="email"
                   placeholder={t("auth.signup.emailPlaceholder")}
                   className="input input-bordered w-full"
@@ -436,9 +441,10 @@ function Login({ defaultTab = "login", autoOpen = false }) {
               </div>
 
               <div className="mt-4 space-y-2">
-                <span>{t("auth.signup.password")}</span>
+                <label htmlFor="signup-password" className="block text-sm font-semibold">{t("auth.signup.password")}</label>
                 <div className="relative">
                   <input
+                  id="signup-password"
                     type={showSignupPassword ? "text" : "password"}
                     placeholder={t("auth.signup.passwordPlaceholder")}
                     className="input input-bordered w-full pr-16"
@@ -447,7 +453,7 @@ function Login({ defaultTab = "login", autoOpen = false }) {
                   />
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
                     onClick={() => setShowSignupPassword((prev) => !prev)}
                     aria-label={
                       showSignupPassword
@@ -518,7 +524,7 @@ function Login({ defaultTab = "login", autoOpen = false }) {
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-6">
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn-solid">
                   {t("auth.signup.submit")}
                 </button>
                 <p className="text-sm">
@@ -540,9 +546,13 @@ function Login({ defaultTab = "login", autoOpen = false }) {
       <dialog id="forgot_password_modal" className="modal">
         <div className="modal-box">
           <h3 className="text-lg font-semibold">{t("auth.forgotTitle")}</h3>
-          <p className="mt-2 text-sm text-slate-600">{t("auth.forgotDesc")}</p>
+          <p className="mt-2 text-sm text-muted">{t("auth.forgotDesc")}</p>
           <form className="mt-4 space-y-3" onSubmit={submitForgot}>
+            <label htmlFor="forgot-email" className="block text-sm font-semibold">
+              Email
+            </label>
             <input
+              id="forgot-email"
               type="email"
               placeholder={t("auth.forgotEmailPlaceholder")}
               className="input input-bordered w-full"
@@ -551,12 +561,12 @@ function Login({ defaultTab = "login", autoOpen = false }) {
               required
             />
             <div className="flex gap-2">
-              <button type="submit" className="btn btn-primary">
+              <button type="submit" className="btn-solid">
                 {t("auth.forgotSend")}
               </button>
               <button
                 type="button"
-                className="btn btn-outline"
+                className="btn-line"
                 onClick={() =>
                   document.getElementById("forgot_password_modal")?.close()
                 }

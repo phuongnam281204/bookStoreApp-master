@@ -76,75 +76,75 @@ function PaymentResult() {
       ? {
           title: t("payment.successTitle"),
           desc: t("payment.successDesc"),
-          tone: "text-emerald-600",
-          badge: "bg-emerald-100 text-emerald-700",
+          tone: "text-ink",
+          badge: "bg-accent/10 text-accent",
         }
       : {
           title: t("payment.failedTitle"),
           desc: t("payment.failedDesc"),
-          tone: "text-rose-600",
-          badge: "bg-rose-100 text-rose-700",
+          tone: "text-ink",
+          badge: "bg-sale/10 text-sale",
         };
 
   return (
     <>
       <Navbar />
-      <div className="max-w-screen-2xl container mx-auto md:px-20 px-4 min-h-screen pt-28 pb-16">
-        <div className="mx-auto max-w-2xl rounded-2xl border bg-white p-6 shadow-sm">
+      <main className="wrap min-h-screen pb-24 pt-28">
+        <div className="max-w-2xl py-12">
           <div
-            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${status.badge}`}
+            className={`inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold ${status.badge}`}
           >
             {payment === "success"
               ? t("payment.badgeSuccess")
               : t("payment.badgeFailed")}
           </div>
-          <h1 className={`mt-4 text-2xl font-bold ${status.tone}`}>
+          <h1 className={`mt-4 font-display text-4xl font-medium md:text-5xl ${status.tone}`}>
             {status.title}
           </h1>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-3 text-lg text-muted">
             {verifying ? t("payment.verifying") : status.desc}
           </p>
 
           {orderId ? (
-            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+            <div className="mt-8 border-y border-line py-4 text-sm">
               <div>
                 {t("payment.orderCode")}:
                 <span className="ml-1 font-semibold">#{orderId.slice(-6)}</span>
               </div>
-              <div className="mt-1 text-xs text-slate-500">{orderId}</div>
+              <div className="mt-1 text-xs text-muted">{orderId}</div>
             </div>
           ) : null}
 
           {reason ? (
-            <div className="mt-3 text-xs text-slate-500">
+            <div className="mt-3 text-xs text-muted">
               {t("payment.reason")}: {reason}
             </div>
           ) : null}
 
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
               to="/orders"
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+              className="btn-solid"
             >
               {t("payment.viewOrders")}
             </Link>
             {payment !== "success" ? (
               <Link
                 to="/checkout"
-                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold"
+                className="btn-line"
               >
                 {t("payment.backToCheckout")}
               </Link>
             ) : null}
             <Link
               to="/"
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold"
+              className="link-draw ml-2 inline-flex min-h-[44px] items-center text-sm font-semibold text-muted hover:text-ink"
             >
               {t("payment.backHome")}
             </Link>
           </div>
         </div>
-      </div>
+      </main>
       <Footer />
     </>
   );

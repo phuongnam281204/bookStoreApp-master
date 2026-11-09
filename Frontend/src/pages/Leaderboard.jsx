@@ -47,82 +47,85 @@ function Leaderboard() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pt-28 pb-12">
-        <div className="max-w-screen-xl mx-auto md:px-20 px-4">
-          <div className="bg-white border border-slate-200 shadow-sm dark:bg-slate-800 dark:border-slate-700">
-            {/* Header */}
-            <div className="bg-slate-800 text-white p-6">
-              <h1 className="text-xl font-bold uppercase tracking-wide">Bảng xếp hạng bán chạy tuần</h1>
-            </div>
+      <main className="wrap min-h-screen pb-24 pt-28">
+        <div className="border-b border-line pb-6">
+          <h1 className="font-display text-4xl font-medium md:text-5xl">
+            Sách bán chạy theo thể loại
+          </h1>
+          <p className="mt-2 text-muted">
+            Mười cuốn bán nhiều nhất của từng kệ.
+          </p>
+        </div>
 
-            {/* Tabs */}
-            <div className="border-b border-slate-200 dark:border-slate-700">
-              <div className="flex overflow-x-auto hide-scrollbar">
-                {categories.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setActiveTab(cat)}
-                    className={`whitespace-nowrap px-6 py-4 font-medium text-sm transition-colors relative ${
-                      activeTab === cat
-                        ? "text-red-500"
-                        : "text-slate-600 dark:text-slate-400 hover:text-rose-500"
+        <div
+          role="tablist"
+          aria-label="Thể loại"
+          className="hide-scrollbar mt-6 flex gap-6 overflow-x-auto border-b border-line"
+        >
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === cat}
+              onClick={() => setActiveTab(cat)}
+              className={`-mb-px min-h-[44px] whitespace-nowrap border-b-2 pb-3 text-sm font-semibold transition-colors ${
+                activeTab === cat
+                  ? "border-accent text-ink"
+                  : "border-transparent text-muted hover:text-ink"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {topBooks.length === 0 ? (
+          <p className="py-16 text-muted">Kệ này chưa có số liệu bán.</p>
+        ) : (
+          <ol className="mt-4 grid lg:grid-cols-2 lg:gap-x-16">
+            {topBooks.map((book, index) => (
+              <li key={book._id} className="border-b border-line">
+                <Link
+                  to={`/book/${book._id}`}
+                  className="group grid grid-cols-[3rem_64px_1fr] items-center gap-5 py-5"
+                >
+                  <span
+                    className={`font-display text-4xl font-medium tabular-nums ${
+                      index < 3 ? "text-accent" : "text-muted"
                     }`}
                   >
-                    {cat}
-                    {activeTab === cat && (
-                      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-red-500"></span>
+                    {index + 1}
+                  </span>
+                  <span className="block overflow-hidden rounded-sm bg-surface shadow-[0_1px_2px_rgb(0_0_0/0.06),0_10px_24px_-14px_rgb(0_0_0/0.3)]">
+                    {book.image ? (
+                      <img
+                        src={book.image}
+                        alt=""
+                        className="aspect-[2/3] w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <span className="block aspect-[2/3] w-full" />
                     )}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* List */}
-            <div className="p-0">
-              {topBooks.length === 0 ? (
-                <p className="text-center text-slate-500 py-10">Chưa có dữ liệu</p>
-              ) : (
-                <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-700">
-                  {topBooks.map((book, index) => (
-                    <Link
-                      to={`/book/${book._id}`}
-                      key={book._id}
-                      className="flex gap-6 p-6 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
-                    >
-                      <div className="flex flex-col items-center justify-center font-bold text-xl md:text-2xl min-w-[40px]">
-                        <span className="text-slate-800 dark:text-white">
-                          {String(index + 1).padStart(2, "0")}
-                        </span>
-                        <span className="text-green-500 text-base md:text-lg">↑</span>
-                      </div>
-                      
-                      <div className="w-20 h-28 shrink-0 rounded overflow-hidden border border-slate-200 dark:border-slate-600 bg-white shadow-sm">
-                        <img
-                          src={book.image || "/placeholder.png"}
-                          alt={book.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      
-                      <div className="flex flex-col justify-center">
-                        <h3 className="text-base md:text-lg font-semibold text-slate-800 dark:text-white line-clamp-2">
-                          {book.name}
-                        </h3>
-                        <p className="text-sm text-slate-500 mt-1 md:mt-2">
-                          {book.author || "Nhiều tác giả"}
-                        </p>
-                        <p className="text-sm text-blue-500 mt-1 md:mt-2 font-medium">
-                          {(book.soldCount || 0) * 5} điểm
-                        </p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+                  </span>
+                  <span className="min-w-0">
+                    <span className="link-draw line-clamp-2 font-semibold leading-snug">
+                      {book.name}
+                    </span>
+                    <span className="mt-1 block truncate text-sm text-muted">
+                      {book.author || "Nhiều tác giả"}
+                    </span>
+                    <span className="mt-1 block text-sm text-muted">
+                      {(book.soldCount || 0).toLocaleString("vi-VN")} cuốn đã bán
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        )}
+      </main>
       <Footer />
     </>
   );

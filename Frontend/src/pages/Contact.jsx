@@ -8,70 +8,66 @@ function Contact() {
   return (
     <>
       <Navbar />
-      <div className="max-w-screen-2xl container mx-auto md:px-20 px-4 min-h-screen pt-28 pb-10">
-        <h1 className="text-2xl md:text-4xl font-bold">{t("nav.contact")}</h1>
-        <p className="mt-3 opacity-80">{t("contact.subtitle")}</p>
+      <main className="wrap min-h-screen pb-24 pt-28">
+        <div className="border-b border-line pb-6">
+          <h1 className="font-display text-4xl font-medium md:text-5xl">
+            {t("nav.contact")}
+          </h1>
+          <p className="mt-2 text-muted">{t("contact.subtitle")}</p>
+        </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          <div className="card bg-base-100 shadow-xl border border-base-200">
-            <div className="card-body gap-6">
-              <div>
-                <div className="text-sm font-semibold">
-                  {t("contact.hotline")}
-                </div>
-                <div className="mt-3 space-y-3">
-                  {contactInfo.phones.map((phone) => (
-                    <a
-                      key={phone.raw}
-                      href={`tel:${phone.raw}`}
-                      className="btn btn-ghost justify-start w-full"
-                    >
-                      {phone.label}
-                    </a>
-                  ))}
-                </div>
-              </div>
+        <div className="mt-10 grid gap-12 lg:grid-cols-12 lg:gap-16">
+          <dl className="lg:col-span-5">
+            <div className="border-b border-line pb-6">
+              <dt className="text-sm text-muted">{t("contact.hotline")}</dt>
+              <dd className="mt-2 flex flex-col">
+                {contactInfo.phones.map((phone) => (
+                  <a
+                    key={phone.raw}
+                    href={`tel:${phone.raw}`}
+                    className="link-draw self-start py-1 font-display text-3xl font-medium"
+                  >
+                    {phone.label}
+                  </a>
+                ))}
+              </dd>
+            </div>
 
-              <div className="divider my-0" />
-
-              <div>
-                <div className="text-sm font-semibold">
-                  {t("contact.address")}
-                </div>
-                <p className="mt-2 opacity-80">{contactInfo.address}</p>
-              </div>
-
-              <div>
-                <div className="text-sm font-semibold">
-                  {t("contact.email")}
-                </div>
+            <div className="border-b border-line py-6">
+              <dt className="text-sm text-muted">{t("contact.email")}</dt>
+              <dd className="mt-2">
                 <a
                   href={`mailto:${contactInfo.supportEmail}`}
-                  className="link mt-2 block"
+                  className="link-draw text-lg font-semibold text-accent"
                 >
                   {contactInfo.supportEmail}
                 </a>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm opacity-80">
-                <div className="badge badge-success badge-sm" />
-                <span>{t("contact.hours")}</span>
-              </div>
+              </dd>
             </div>
-          </div>
 
-          <div className="card bg-base-100 shadow-xl border border-base-200 overflow-hidden">
+            <div className="border-b border-line py-6">
+              <dt className="text-sm text-muted">{t("contact.address")}</dt>
+              <dd className="mt-2 text-lg">{contactInfo.address}</dd>
+            </div>
+
+            <div className="py-6">
+              <dt className="sr-only">Giờ mở cửa</dt>
+              <dd className="text-lg">{t("contact.hours")}</dd>
+            </div>
+          </dl>
+
+          <div className="overflow-hidden rounded-md border border-line bg-surface lg:col-span-7">
             <iframe
-              title="Google Map"
+              title={`Bản đồ: ${contactInfo.address}`}
               src={contactInfo.mapSrc}
-              className="w-full h-[420px]"
+              className="block h-[420px] w-full lg:h-full lg:min-h-[480px]"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               allowFullScreen
             />
           </div>
         </div>
-      </div>
+      </main>
       <Footer />
     </>
   );

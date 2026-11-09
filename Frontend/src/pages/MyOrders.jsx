@@ -3,6 +3,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { Link } from "react-router-dom";
 import { useI18n } from "../context/I18nProvider";
 
 const formatVnd = (value) =>
@@ -83,48 +84,48 @@ function MyOrders() {
   return (
     <>
       <Navbar />
-      <div className="max-w-screen-2xl container mx-auto md:px-20 px-4 min-h-screen pt-28 pb-16">
+      <main className="wrap min-h-screen pb-24 pt-28">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">{t("orders.title")}</h1>
-            <p className="mt-1 text-sm opacity-70">{t("orders.subtitle")}</p>
+            <h1 className="font-display text-4xl font-medium md:text-5xl">{t("orders.title")}</h1>
+            <p className="mt-2 text-muted">{t("orders.subtitle")}</p>
           </div>
           <button
-            className="px-4 py-2 rounded-md border dark:border-slate-700"
+            className="btn-line"
             onClick={load}
           >
             {t("orders.reload")}
           </button>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-10 border-t border-line">
           {loading ? (
-            <p>{t("orders.loading")}</p>
+            <p className="py-8 text-muted">{t("orders.loading")}</p>
           ) : !orders.length ? (
-            <div className="rounded-2xl border border-dashed p-8 text-center">
-              {t("orders.empty")}
+            <div className="py-16">
+              <p className="text-muted">{t("orders.empty")}</p>
+              <Link to="/course" className="btn-solid mt-6">
+                Xem tất cả sách
+              </Link>
             </div>
           ) : (
-            <div className="space-y-4">
+            <ul>
               {orders.map((order) => {
                 const isCancelled = order.status === "cancelled";
                 const isPaid = order.paymentStatus === "paid";
                 const canCancel = !isCancelled && !isPaid;
 
                 return (
-                  <div
-                    key={order._id}
-                    className="rounded-2xl border bg-white p-5 shadow-sm dark:bg-slate-900 dark:border-slate-700"
-                  >
+                  <li key={order._id} className="border-b border-line py-8">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
-                        <div className="text-sm text-slate-500">
+                        <div className="text-sm text-muted">
                           {t("orders.code")}:
-                          <span className="ml-1 font-semibold">
+                          <span className="ml-1 font-display text-2xl font-medium text-ink">
                             #{String(order._id).slice(-6)}
                           </span>
                         </div>
-                        <div className="mt-2 text-sm text-slate-500">
+                        <div className="mt-1 text-sm text-muted">
                           {order.createdAt
                             ? new Date(order.createdAt).toLocaleString(locale)
                             : ""}
@@ -132,24 +133,28 @@ function MyOrders() {
                       </div>
 
                       <div className="text-right">
-                        <div className="text-lg font-semibold text-rose-600">
+                        <div className="text-lg font-semibold">
                           {formatVnd(order.total)}
                         </div>
-                        <div className="mt-1 text-sm text-slate-500">
+                        <div className="mt-1 text-sm text-muted">
                           {order.paymentMethod} •{" "}
                           {paymentLabel(order.paymentStatus)}
                         </div>
-                        <div className="mt-2 inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                        <div
+                          className={`mt-2 inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold ${
+                            isCancelled ? "bg-line text-muted" : "bg-accent/10 text-accent"
+                          }`}
+                        >
                           {statusLabel(order.status)}
                         </div>
                       </div>
                     </div>
 
                     <details className="mt-4">
-                      <summary className="cursor-pointer text-sm font-semibold text-slate-600">
+                      <summary className="min-h-[44px] cursor-pointer py-2 text-sm font-semibold text-accent">
                         {t("orders.details")}
                       </summary>
-                      <div className="mt-3 grid gap-2 text-sm text-slate-600">
+                      <div className="mt-3 grid gap-2 text-sm">
                         {order.items?.map((item) => (
                           <div
                             key={`${order._id}-${item.bookId}`}
@@ -162,7 +167,7 @@ function MyOrders() {
                           </div>
                         ))}
                       </div>
-                      <div className="mt-3 text-sm text-slate-500">
+                      <div className="mt-3 text-sm text-muted">
                         {t("orders.address")}:{" "}
                         {order.shippingAddress?.addressLine || "-"}
                         {order.shippingAddress?.city
@@ -174,28 +179,28 @@ function MyOrders() {
                     <div className="mt-4 flex flex-wrap gap-3">
                       <button
                         type="button"
-                        className="px-3 py-2 rounded-md border border-rose-500 text-rose-600 disabled:opacity-50"
+                        className="link-draw min-h-[44px] text-sm font-semibold text-sale disabled:text-muted disabled:opacity-60"
                         onClick={() => openCancelModal(order)}
                         disabled={!canCancel || busyId === order._id}
                       >
                         {t("orders.cancel")}
                       </button>
                     </div>
-                  </div>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           )}
         </div>
-      </div>
+      </main>
       <dialog id="cancel_order_modal" className="modal">
         <div className="modal-box">
-          <h3 className="text-lg font-semibold">{t("orders.cancelTitle")}</h3>
-          <p className="mt-2 text-sm text-slate-600">
+          <h3 className="font-display text-2xl font-medium">{t("orders.cancelTitle")}</h3>
+          <p className="mt-2 text-sm text-muted">
             {t("orders.cancelQuestion")}
           </p>
           {confirmOrder ? (
-            <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+            <div className="mt-3 rounded-md border border-line bg-surface p-3 text-sm">
               <div>
                 {t("orders.code")}:
                 <span className="font-semibold">
@@ -214,7 +219,7 @@ function MyOrders() {
             <form method="dialog" className="flex gap-2">
               <button
                 type="button"
-                className="btn btn-outline"
+                className="btn-line"
                 onClick={() => {
                   setConfirmOrder(null);
                   document.getElementById("cancel_order_modal")?.close();
@@ -224,7 +229,7 @@ function MyOrders() {
               </button>
               <button
                 type="button"
-                className="btn bg-rose-600 text-white hover:bg-rose-700"
+                className="btn-solid bg-sale"
                 onClick={() => {
                   if (!confirmOrder?._id) return;
                   document.getElementById("cancel_order_modal")?.close();

@@ -1,3 +1,4 @@
+import { useLayoutEffect } from "react";
 import Home from "./home/Home";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Courses from "./courses/Courses";
@@ -21,9 +22,16 @@ import Leaderboard from "./pages/Leaderboard";
 function App() {
   const [authUser] = useAuth();
   const location = useLocation();
+
+  // A new page starts at its top; a hash link (#reviews) still jumps to its anchor.
+  useLayoutEffect(() => {
+    if (location.hash) return;
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [location.pathname, location.search, location.hash]);
+
   return (
     <>
-      <div className="dark:bg-slate-900 dark:text-white">
+      <div className="min-h-screen bg-paper text-ink">
         <div className="page-transition" key={location.pathname}>
           <Routes location={location}>
             <Route path="/" element={<Home />} />

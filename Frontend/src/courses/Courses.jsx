@@ -5,9 +5,9 @@ function Courses() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-base-100 dark:bg-slate-900">
+      <main className="min-h-screen">
         <Course />
-      </div>
+      </main>
       <Footer />
     </>
   );
